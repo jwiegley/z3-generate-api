@@ -1,0 +1,39 @@
+name:       z3-generate-api
+version:    1.0.0
+synopsis:   A tool to generate Haskell wrappers around the Z3 C API
+github:     jwiegley/z3-generate-api
+author:     John Wiegley
+maintainer: johnw@newartisans.com
+category:   System
+license:    BSD3
+
+description:
+  A tool to generate Haskell wrappers around the Z3 C API.
+
+dependencies:
+  - base                  >= 4.7  && < 5.0
+  - aeson
+  - bindings-DSL
+  - c2hsc                 >= 0.7.1
+  - containers
+  - directory
+  - filepath
+  - language-c
+  - lens
+  - mtl                   > 2.1
+  - optparse-applicative
+  - parsec
+  - process
+  - split
+  - temporary
+  - transformers
+  - unordered-containers
+  - yaml
+  - z3
+
+extra-source-files:
+  - README.md
+
+executables:
+  z3-generate-api:
+    main: Main.hs

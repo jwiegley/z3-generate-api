@@ -1,0 +1,4 @@
+/default.nix
+/shell.nix
+/dist/
+/z3-[0-9.]*/
