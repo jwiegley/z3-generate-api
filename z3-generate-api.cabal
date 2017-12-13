@@ -43,5 +43,4 @@ executable z3-generate-api
     , transformers
     , unordered-containers
     , yaml
-    , z3
   default-language: Haskell2010

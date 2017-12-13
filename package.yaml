@@ -29,7 +29,6 @@ dependencies:
   - transformers
   - unordered-containers
   - yaml
-  - z3
 
 extra-source-files:
   - README.md
