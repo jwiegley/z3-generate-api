@@ -34,3 +34,9 @@ substitutions:
   - type: ccall
     name: Z3_error_handler
     newType: callback_t
+  - type: ccall
+    name: Z3_fixedpoint_reduce_assign_callback_fptr
+    newType: callback_t
+  - type: ccall
+    name: Z3_fixedpoint_reduce_app_callback_fptr
+    newType: callback_t
