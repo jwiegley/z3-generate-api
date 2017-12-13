@@ -353,19 +353,22 @@ main = do
 
   forM_ fdecls' $ \(file, decls) -> do
     putStrLn file
-    let modName = toUpper (file !! 3) : drop 4 (takeBaseName file)
+    let modName = capitalize (drop 3 (takeBaseName file))
         mvars = M.empty & at "name" ?~ modName
-    withFile (interpolate mvars (opts^.headerOutputPath)) WriteMode $ \h -> do
+    withFile (interpolate (optVars <> mvars)
+                          (opts^.headerOutputPath)) WriteMode $ \h -> do
       let vars = M.empty &~ do
             at "path"   ?= pwd </> path
             at "header" ?= file
             at "module" ?= "Z3.Base.C." ++ modName
       hPutStr h (interpolate vars (opts^.hscPreface))
 
-      when (modName == "Api") $
-        forM_ (M.keys globalNames) $ \name -> do
+      if modName == "Api"
+        then forM_ (M.keys globalNames) $ \name -> do
           hPutStrLn h $ "data " ++ name
           hPutStrLn h $ "type C'" ++ name ++ " = Ptr " ++ name
+        else
+          hPutStrLn h "import Z3.Base.C.Api"
 
       forM_ decls $ \case
           Left err -> error $ "Parse error: " ++ show err

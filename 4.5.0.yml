@@ -29,7 +29,7 @@ headers:
   - z3_optimization.h
   - z3_polynomial.h
   - z3_rcf.h
-headerOutputPath: 'C/#{name}.hsc'
+headerOutputPath: 'api/#{version}/Z3/Base/C/#{name}.hsc'
 substitutions:
   - type: ccall
     name: Z3_error_handler
