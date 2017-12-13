@@ -1,4 +1,5 @@
-/default.nix
-/shell.nix
-/dist/
+default.nix
+shell.nix
+dist/
 /.dir-locals.el
+/api/4.5.0/z3-4.5.0/
