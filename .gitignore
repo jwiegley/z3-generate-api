@@ -2,3 +2,4 @@
 /shell.nix
 /dist/
 /z3-[0-9.]*/
+/.dir-locals.el

@@ -354,7 +354,8 @@ main = do
   forM_ fdecls' $ \(file, decls) -> do
     putStrLn file
     let modName = toUpper (file !! 3) : drop 4 (takeBaseName file)
-    withFile (modName <.> ".hsc") WriteMode $ \h -> do
+        mvars = M.empty & at "name" ?~ modName
+    withFile (interpolate mvars (opts^.headerOutputPath)) WriteMode $ \h -> do
       let vars = M.empty &~ do
             at "path"   ?= pwd </> path
             at "header" ?= file
