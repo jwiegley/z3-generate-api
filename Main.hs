@@ -411,17 +411,17 @@ main = do
   --
   --   /**
   --      \brief Create a real from a fraction.
-  -- 
+  --
   --      \param c logical context.
   --      \param num numerator of rational.
   --      \param den denomerator of rational.
-  -- 
+  --
   --      \pre den != 0
-  -- 
+  --
   --      \sa Z3_mk_numeral
   --      \sa Z3_mk_int
   --      \sa Z3_mk_unsigned_int
-  -- 
+  --
   --      def_API('Z3_mk_real', AST, (_in(CONTEXT), _in(INT), _in(INT)))
   --   */
   --
@@ -440,4 +440,4 @@ main = do
   --   mkReal :: MonadZ3 z3
   --     => Int       -- ^ num: numerator of rational
   --     -> Int       -- ^ den: denomerator of rational
-  --     -> z3 AST    -- 
+  --     -> z3 AST    --
