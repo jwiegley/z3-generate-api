@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -11,19 +12,19 @@
 module Main where
 
 import           Control.Arrow (second)
-import           Control.Lens hiding ((<.>))
+import           Control.Lens
 import           Control.Monad
 import           Control.Monad.Trans.State
 import qualified Data.Aeson.Types as Aeson
-import           Data.Aeson.Types hiding (Parser, Options, parse)
+import           Data.Aeson.Types hiding ((.=), Parser, Options, parse)
 import           Data.C2Hsc
-import           Data.Char (toLower, toUpper)
+import           Data.Char
 import           Data.Foldable
 import           Data.HashMap.Lazy (HashMap)
 import qualified Data.HashMap.Lazy as M
 import           Data.List
 import           Data.List.Split
-import           Data.Maybe (fromMaybe)
+import           Data.Maybe (fromMaybe, catMaybes)
 import           Data.Monoid
 import           Data.Traversable
 import           Data.Typeable
@@ -48,12 +49,40 @@ import           System.IO.Temp
 import           System.Process
 import           Text.Parsec hiding ((<|>), many, option)
 
+data Type
+  = TUnit
+  | TCUInt
+  | TEntry String
+  | TPtr Type
+  | TIO Type
+  | TFun [Type]
+
+makePrisms ''Type
+
+data Entry = Entry
+  { _entryKind    :: String
+  , _entryName    :: String
+  -- , _entryType    :: [Type]
+  -- , _entryArgs    :: [String]
+  , _entryType    :: Maybe String
+  , _entryDoxygen :: Maybe String
+  }
+
+instance Show Entry where
+  show Entry {..} =
+    "#" ++ _entryKind ++ " " ++ _entryName
+      ++ case _entryType of
+           Nothing  -> ""
+           Just def -> " , " ++ def
+
+makeLenses ''Entry
+
 data Substitution = Substitution
-  { _substType    :: String
+  { _substKind    :: String
   , _substName    :: String
-  , _substNewType :: Maybe String
+  , _substNewKind :: Maybe String
   , _substNewName :: Maybe String
-  , _substNewBody :: Maybe String
+  , _substNewType :: Maybe String
   }
   deriving (Generic, Typeable)
 
@@ -324,37 +353,21 @@ main = do
   -- and expand them manually into ForeignFFI declarations tailored for
   -- haskell-z3.
 
-  let subst decl = (\f -> parse f decl decl) $ do
-        isMacro <- (True <$ char '#') <|> pure False
-        if isMacro
-          then do
-            macro <- manyTill anyChar space
-            _ <- many space
-            item <- manyTill anyChar ((() <$ space) <|> eof)
-            mdef <- (do _ <- many space
-                        _ <- string ","
-                        _ <- many space
-                        Just <$> manyTill anyChar eof) <|> return Nothing
-            case find (\s -> _substType s == macro && _substName s == item)
-                      (opts^.substitutions) of
-              Nothing ->
-                return $ "#" ++ macro ++ " " ++ item
-                      ++ case mdef of
-                           Nothing  -> ""
-                           Just def -> " , " ++ def
-              Just Substitution {..} ->
-                return $ "#"   ++ fromMaybe macro _substNewType
-                      ++ " "   ++ fromMaybe item  _substNewName
-                      ++ case mdef of
-                           Nothing  -> ""
-                           Just def -> " , " ++ fromMaybe def   _substNewBody
-          else return decl
+  let subst decl =
+        case parse parseHscEntry decl decl of
+          Left err -> error $ "Error in parseHscEntry: " ++ show err
+          Right Nothing -> Left decl
+          Right (Just entry) ->
+            Right (substEntry (opts^.substitutions) entry)
       fdecls' = map (second (map subst)) filesToDecls
+
+  docs <- fmap mconcat $ forM fdecls' $ \(file, _) ->
+    readDoxygen file <$> readFile (pwd </> path </> file)
 
   forM_ fdecls' $ \(file, decls) -> do
     putStrLn file
     let modName = capitalize (drop 3 (takeBaseName file))
-        mvars = M.empty & at "name" ?~ modName
+        mvars   = M.empty & at "name" ?~ modName
     withFile (interpolate (optVars <> mvars)
                           (opts^.headerOutputPath)) WriteMode $ \h -> do
       let vars = M.empty &~ do
@@ -371,9 +384,20 @@ main = do
           hPutStrLn h "import Z3.Base.C.Api"
 
       forM_ decls $ \case
-          Left err -> error $ "Parse error: " ++ show err
-          Right d -> unless ("#globalvar " `isPrefixOf` d) $
-            hPutStrLn h d
+        Left s  -> hPutStrLn h s
+        Right e -> do
+          forM_ (docs ^. at (e^.entryName)) $ \doc ->
+            let doc' = trim
+                     . unlines
+                     . filter (not . ("def_API(" `isInfixOf`))
+                     . lines $ doc
+                doc'' = if "\\brief " `isPrefixOf` doc'
+                        then drop 7 doc'
+                        else doc' in
+            hPutStrLn h $ "\n{- | " ++ doc'' ++ " -}"
+
+          unless (e^.entryKind == "globalvar") $
+            hPrint h e
 
   -- STEP 6
   --
@@ -444,3 +468,61 @@ main = do
   --     => Int       -- ^ num: numerator of rational
   --     -> Int       -- ^ den: denomerator of rational
   --     -> z3 AST    --
+
+substEntry :: [Substitution] -> Entry -> Entry
+substEntry substs e = flip execState e $
+  case find (\s -> s^.substKind == e^.entryKind &&
+                   s^.substName == e^.entryName) substs of
+    Nothing -> return ()
+    Just Substitution {..} -> do
+      forM_ _substNewKind (entryKind .=)
+      forM_ _substNewName (entryName .=)
+      forM_ _substNewType (entryType ?=)
+
+parseHscEntry :: Stream s m Char => ParsecT s u m (Maybe Entry)
+parseHscEntry = do
+  isMacro <- (True <$ char '#') <|> pure False
+  if isMacro
+    then fmap Just $ Entry
+      <$> manyTill anyChar space <* many space
+      <*> manyTill anyChar ((() <$ space) <|> eof)
+      <*> ((do _ <- many space
+               _ <- string ","
+               _ <- many space
+               Just <$> manyTill anyChar eof) <|> return Nothing)
+      <*> pure Nothing
+  else return Nothing
+
+readDoxygen :: FilePath -> String -> HashMap String String
+readDoxygen path contents =
+  case parse (many (try (skipToComment *> parser)) <* skipMany anyChar <* eof)
+             path contents of
+    Left err -> error $ "Parsing error: " ++ show err
+    Right xs -> M.fromList (catMaybes xs)
+ where
+  skipToComment = manyTill anyChar (try (string "/**"))
+
+  parser = do
+    _ <- many space
+    doc <- manyTill anyChar (try (string "*/"))
+    if "\\brief" `isPrefixOf` doc
+      then (do name <- parseTypedef <|> parseDefine <|> parseDecl
+               return $ Just (name, doc)) <|> return Nothing
+      else return Nothing
+
+  parseTypedef =
+    string "typedef"
+      *> fmap last (some (many space *>
+                          some (satisfy (\c -> isAlphaNum c || c == '_'))))
+
+  parseDefine =
+    string "#define"
+      *> many space
+      *> some (satisfy (\c -> isAlphaNum c || c == '_'))
+
+  parseDecl =
+    manyTill anyChar (try (string "Z3_API" >> many space))
+      *> manyTill anyChar (try (char '('))
+
+trim :: String -> String
+trim = reverse . dropWhile isSpace . reverse . dropWhile isSpace
