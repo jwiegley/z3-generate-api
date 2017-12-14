@@ -40,3 +40,6 @@ substitutions:
   - kind: ccall
     name: Z3_fixedpoint_reduce_app_callback_fptr
     newKind: callback_t
+docFixes:
+  - match: '\\ccode{- arg}'
+    subst: '\ccode{ - arg}'

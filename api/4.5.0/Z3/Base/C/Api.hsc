@@ -1118,7 +1118,7 @@ type C'Z3_constructor = Ptr Z3_constructor
        \remark The number of arguments must be greater than zero. -}
 #ccall Z3_mk_sub , <Z3_context> -> CUInt -> Ptr <Z3_ast> -> IO <Z3_ast>
 
-{- | Create an AST node representing
+{- | Create an AST node representing \ccode{ - arg}.
 
        The arguments must have int or real type. -}
 #ccall Z3_mk_unary_minus , <Z3_context> -> <Z3_ast> -> IO <Z3_ast>

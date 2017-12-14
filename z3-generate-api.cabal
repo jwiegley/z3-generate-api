@@ -28,6 +28,7 @@ executable z3-generate-api
       base                  >= 4.7  && < 5.0
     , aeson
     , bindings-DSL
+    , bytestring
     , c2hsc                 >= 0.7.1
     , containers
     , directory
@@ -37,9 +38,11 @@ executable z3-generate-api
     , mtl                   > 2.1
     , optparse-applicative
     , parsec
+    , pcre-heavy
     , process
     , split
     , temporary
+    , text
     , transformers
     , unordered-containers
     , yaml

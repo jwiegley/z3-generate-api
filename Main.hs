@@ -11,12 +11,14 @@
 
 module Main where
 
-import           Control.Arrow (second)
+import           Control.Arrow (first, second)
 import           Control.Lens
 import           Control.Monad
 import           Control.Monad.Trans.State
 import qualified Data.Aeson.Types as Aeson
 import           Data.Aeson.Types hiding ((.=), Parser, Options, parse)
+import           Data.ByteString (ByteString)
+import qualified Data.ByteString as B
 import           Data.C2Hsc
 import           Data.Char
 import           Data.Foldable
@@ -26,6 +28,8 @@ import           Data.List
 import           Data.List.Split
 import           Data.Maybe (fromMaybe, catMaybes)
 import           Data.Monoid
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
 import           Data.Traversable
 import           Data.Typeable
 import qualified Data.Yaml as Y
@@ -48,6 +52,7 @@ import           System.IO
 import           System.IO.Temp
 import           System.Process
 import           Text.Parsec hiding ((<|>), many, option)
+import           Text.Regex.PCRE.Heavy
 
 data Type
   = TUnit
@@ -99,6 +104,33 @@ instance FromJSON Substitution where
 
 makeLenses ''Substitution
 
+data DocFix = DocFix
+  { _docMatch :: String
+  , _docSubst :: String
+  }
+  deriving (Generic, Typeable)
+
+customDocFix :: Aeson.Options
+customDocFix =
+  defaultOptions { fieldLabelModifier = \x -> toLower (x !! 4) : drop 5 x }
+
+instance ToJSON DocFix where
+    toJSON     = genericToJSON customDocFix
+    toEncoding = genericToEncoding customDocFix
+
+instance FromJSON DocFix where
+    parseJSON = genericParseJSON customDocFix
+
+makeLenses ''DocFix
+
+compileRe :: String -> Regex
+compileRe s =
+  either (const (error $ "Failed to compile regex: " ++ s))
+         id (compileM (T.encodeUtf8 (T.pack s)) [])
+
+compileDocFixes :: [DocFix] -> [(DocFix, Regex)]
+compileDocFixes = map (\x -> (x, compileRe (x^.docMatch)))
+
 data Options = Options
   { _version          :: String
   , _gitURI           :: String
@@ -111,6 +143,7 @@ data Options = Options
   , _headers          :: [FilePath]
   , _headerOutputPath :: FilePath
   , _substitutions    :: [Substitution]
+  , _docFixes         :: [DocFix]
   }
   deriving (Generic, Typeable)
 
@@ -139,6 +172,7 @@ defOpts = Options
   , _headers          = error "Must specify headers to process"
   , _headerOutputPath = "#{header}.hsc"
   , _substitutions    = []
+  , _docFixes         = []
   }
 
 generateOpts :: Options -> Parser Options
@@ -184,6 +218,7 @@ generateOpts opts = Options
             <> help "Pattern used to generate output header names"
             <> value (opts^.headerOutputPath))
     <*> pure (opts^.substitutions)
+    <*> pure (opts^.docFixes)
   where
     parseList :: ReadM [FilePath]
     parseList = eitherReader $ \v -> return (splitOn "," v)
@@ -364,6 +399,8 @@ main = do
   docs <- fmap mconcat $ forM fdecls' $ \(file, _) ->
     readDoxygen file <$> readFile (pwd </> path </> file)
 
+  let compiledFixes = compileDocFixes (opts^.docFixes)
+
   forM_ fdecls' $ \(file, decls) -> do
     putStrLn file
     let modName = capitalize (drop 3 (takeBaseName file))
@@ -387,14 +424,8 @@ main = do
         Left s  -> hPutStrLn h s
         Right e -> do
           forM_ (docs ^. at (e^.entryName)) $ \doc ->
-            let doc' = trim
-                     . unlines
-                     . filter (not . ("def_API(" `isInfixOf`))
-                     . lines $ doc
-                doc'' = if "\\brief " `isPrefixOf` doc'
-                        then drop 7 doc'
-                        else doc' in
-            hPutStrLn h $ "\n{- | " ++ doc'' ++ " -}"
+            hPutStrLn h $ "\n{- | "
+              ++ convertDoxygen compiledFixes doc ++ " -}"
 
           unless (e^.entryKind == "globalvar") $
             hPrint h e
@@ -526,3 +557,18 @@ readDoxygen path contents =
 
 trim :: String -> String
 trim = reverse . dropWhile isSpace . reverse . dropWhile isSpace
+
+convertDoxygen :: [(DocFix, Regex)] -> String -> String
+convertDoxygen fixes
+  = (\d -> if "\\brief " `isPrefixOf` d
+          then drop 7 d
+          else d)
+  . trim
+  . (\s -> foldr (\(df, regex) -> gsub regex $ \gs ->
+                    interpolate (M.fromList (map (first show)
+                                                 (zip [1 :: Int ..] gs)))
+                                (df^.docSubst))
+                 s fixes)
+  . unlines
+  . filter (not . ("def_API(" `isInfixOf`))
+  . lines
