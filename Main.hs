@@ -136,12 +136,12 @@ data Options = Options
   , _gitURI           :: String
   , _gitTag           :: String
   , _gitWorkdir       :: FilePath
-  , _cPrefacePrimary  :: String
-  , _cPrefaceRest     :: String
+  , _cPreface         :: String
   , _hscPreface       :: String
   , _headersPath      :: FilePath
   , _headers          :: [FilePath]
   , _headerOutputPath :: FilePath
+  , _userApiModule    :: FilePath
   , _substitutions    :: [Substitution]
   , _docFixes         :: [DocFix]
   }
@@ -165,12 +165,12 @@ defOpts = Options
   , _gitURI           = "https://github.com/Z3Prover/z3"
   , _gitTag           = "z3-#{version}"
   , _gitWorkdir       = "z3-#{version}"
-  , _cPrefacePrimary  = error "Must specify cPrefacePrimary"
-  , _cPrefaceRest     = error "Must specify cPrefaceRest"
-  , _hscPreface       = error "Must specify hsccPreface"
+  , _cPreface         = error "Must specify cPreface"
+  , _hscPreface       = error "Must specify hscPreface"
   , _headersPath      = "z3/src/api"
   , _headers          = error "Must specify headers to process"
-  , _headerOutputPath = "#{header}.hsc"
+  , _headerOutputPath = "Z3/Base/C/#{name}.hsc"
+  , _userApiModule    = "Z3/Base/C.hsc"
   , _substitutions    = []
   , _docFixes         = []
   }
@@ -194,16 +194,12 @@ generateOpts opts = Options
             <> help "Directory to checkout the repository into"
             <> value (opts^.gitWorkdir))
     <*> strOption
-        (   long "c-preface-primary"
-            <> help "Preface to be parsed before z3_api.h"
-            <> value (opts^.cPrefacePrimary))
-    <*> strOption
-        (   long "c-preface-rest"
-            <> help "Preface to be parsed before each header except z3_api.h"
-            <> value (opts^.cPrefaceRest))
+        (   long "c-preface"
+            <> help "C preface to be parsed before each Z3 C header"
+            <> value (opts^.cPreface))
     <*> strOption
         (   long "hsc-preface"
-            <> help "Preface to be included at the top of each .hsc file"
+            <> help "Preface to be included near the top of each .hsc file"
             <> value (opts^.hscPreface))
     <*> strOption
         (   long "headers-path"
@@ -217,6 +213,10 @@ generateOpts opts = Options
         (   long "output"
             <> help "Pattern used to generate output header names"
             <> value (opts^.headerOutputPath))
+    <*> strOption
+        (   long "api-module"
+            <> help "The .hsc file where user-facing declarations are written"
+            <> value (opts^.userApiModule))
     <*> pure (opts^.substitutions)
     <*> pure (opts^.docFixes)
   where
@@ -233,12 +233,12 @@ optionsHashMap Options {..} = M.empty &~ do
   at "git-uri"          ?= _gitURI
   at "git-tag"          ?= _gitTag
   at "git-workdir"      ?= _gitWorkdir
-  at "cPrefacePrimary"  ?= _cPrefacePrimary
-  at "cPrefaceRest"     ?= _cPrefaceRest
+  at "cPreface"         ?= _cPreface
   at "hscPreface"       ?= _hscPreface
   at "headers-path"     ?= _headersPath
   at "headers"          ?= concat _headers
   at "headerOutputPath" ?= _headerOutputPath
+  at "userApiModule"    ?= _userApiModule
 
 interpolate :: HashMap String String -> String -> String
 interpolate _ "" = ""
@@ -349,10 +349,14 @@ main = do
 
   filesToDecls <- forM (opts^.headers) $ \hdr ->
     mutateHeader (path </> hdr)
-      (interpolate (M.empty & at "path" ?~ pwd </> path)
-         (if hdr == "z3_api.h"
-          then opts^.cPrefacePrimary
-          else opts^.cPrefaceRest)) $ \temp -> do
+      (interpolate (M.empty &~ do
+                       at "path" ?= pwd </> path
+                       at "includes" ?=
+                         if hdr == "z3_api.h"
+                         then ""
+                         else "#include \""
+                           ++ pwd </> path ++ "/z3_api.h\"")
+                   (opts^.cPreface)) $ \temp -> do
       result <- runPreprocessor (newGCC gccPath) (rawCppArgs [] temp)
       case result of
         Left err     -> error $ "Failed to run cpp: " ++ show err
@@ -401,34 +405,54 @@ main = do
 
   let compiledFixes = compileDocFixes (opts^.docFixes)
 
-  forM_ fdecls' $ \(file, decls) -> do
-    putStrLn file
-    let modName = capitalize (drop 3 (takeBaseName file))
-        mvars   = M.empty & at "name" ?~ modName
-    withFile (interpolate (optVars <> mvars)
-                          (opts^.headerOutputPath)) WriteMode $ \h -> do
-      let vars = M.empty &~ do
-            at "path"   ?= pwd </> path
-            at "header" ?= file
-            at "module" ?= "Z3.Base.C." ++ modName
-      hPutStr h (interpolate vars (opts^.hscPreface))
+  withFile (opts^.userApiModule) WriteMode $ \api -> do
+    let includes =
+          concatMap (\(file, _) -> "#include \"" ++ file ++ "\"\n")
+                    fdecls'
+    hPutStr api $ interpolate (M.empty &~ do
+                                  at "module" ?= ""
+                                  at "includes" ?= includes)
+                              (opts^.hscPreface)
 
-      if modName == "Api"
-        then forM_ (M.keys globalNames) $ \name -> do
-          hPutStrLn h $ "data " ++ name
-          hPutStrLn h $ "type C'" ++ name ++ " = Ptr " ++ name
-        else
-          hPutStrLn h "import Z3.Base.C.Api"
+    forM_ fdecls' $ \(file, decls) -> do
+      putStrLn $ "Writing " ++ file ++ "..."
 
-      forM_ decls $ \case
-        Left s  -> hPutStrLn h s
-        Right e -> do
-          forM_ (docs ^. at (e^.entryName)) $ \doc ->
-            hPutStrLn h $ "\n{- | "
-              ++ convertDoxygen compiledFixes doc ++ " -}"
+      let modName = capitalize (drop 3 (takeBaseName file))
+          mvars   = M.empty & at "name" ?~ modName
+      withFile (interpolate (optVars <> mvars)
+                            (opts^.headerOutputPath)) WriteMode $ \h -> do
+        let vars = M.empty &~ do
+              at "includes" ?=
+                (if modName == "Api" then "" else "#include \"z3_api.h\"\n")
+                  ++ "#include \"" ++ file ++ "\"\n"
+              at "module"   ?= "." ++ modName
+        hPutStr h (interpolate vars (opts^.hscPreface))
 
-          unless (e^.entryKind == "globalvar") $
-            hPrint h e
+        if modName == "Api"
+          then forM_ (M.keys globalNames) $ \name -> do
+            hPutStrLn h $ "data " ++ name
+            hPutStrLn h $ "type C'" ++ name ++ " = Ptr " ++ name
+          else
+            hPutStrLn h "import Z3.Base.C.Api"
+
+        forM_ decls $ \case
+          Left s  -> hPutStrLn h s
+          Right e -> case e^.entryKind of
+            "globalvar" -> return ()
+            "ccall" -> do
+              hPrint h e
+
+              forM_ (docs ^. at (e^.entryName)) $ \doc ->
+                hPutStrLn api $ "\n{- | "
+                  ++ convertDoxygen compiledFixes doc ++ " -}"
+
+              let ty = fromMaybe (error "Missing type") (e^.entryType)
+              hPutStrLn api $ "foreign import ccall unsafe \""
+                ++ e^.entryName ++ "\""
+              hPutStrLn api $ "  " ++ map toLower (e^.entryName)
+                ++ " :: " ++ convertType ty
+
+            _ -> hPrint h e
 
   -- STEP 6
   --
@@ -572,3 +596,25 @@ convertDoxygen fixes
   . unlines
   . filter (not . ("def_API(" `isInfixOf`))
   . lines
+
+-- | Convert a type of the form:
+-- @
+--   <Z3_context> -> <Z3_func_decl> -> CUInt -> Ptr <Z3_ast> -> IO <Z3_ast>
+-- @
+-- into:
+-- @
+--   Ptr Z3_context -> Ptr Z3_func_decl -> CUInt -> Ptr (Ptr Z3_ast) -> IO (Ptr Z3_ast)
+-- @
+--
+-- This is done by remember which types were defined using:
+-- @
+--   DEFINE_TYPE(Z3_config);
+-- @
+-- Where the expansion of this macro is:
+-- @
+--   typedef struct _Z3_config *Z3_config
+-- @
+--
+-- Other than these, we simply drop angle brackets where we find them.
+convertType :: String -> String
+convertType s = s

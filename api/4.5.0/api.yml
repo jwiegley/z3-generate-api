@@ -2,20 +2,16 @@ version: 4.5.0
 gitURI: https://github.com/Z3Prover/z3
 gitTag: 'z3-#{version}'
 gitWorkdir: 'z3-#{version}'
-cPrefacePrimary: |
+cPreface: |
   #include <stdio.h>
   #include "#{path}/z3_macros.h"
-cPrefaceRest: |
-  #include <stdio.h>
-  #include "#{path}/z3_macros.h"
-  #include "#{path}/z3_api.h"
+  #{includes}
 hscPreface: |
   {-# OPTIONS_GHC -fno-warn-unused-imports #-}
   #include <bindings.dsl.h>
   #include "z3_macros.h"
-  #include "z3_api.h"
-  #include "#{header}"
-  module #{module} where
+  #{includes}
+  module Z3.Base.C#{module} where
   import Foreign.Ptr
   #strict_import
 headersPath: 'z3-#{version}/src/api'
@@ -30,6 +26,7 @@ headers:
   - z3_polynomial.h
   - z3_rcf.h
 headerOutputPath: 'Z3/Base/C/#{name}.hsc'
+userApiModule: 'Z3/Base/C.hsc'
 substitutions:
   - kind: ccall
     name: Z3_error_handler

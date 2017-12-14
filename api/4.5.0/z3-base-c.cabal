@@ -11,6 +11,8 @@ cabal-version:  >= 1.10
 
 library
   exposed-modules:
+    Z3.Base.C
+  other-modules:
     Z3.Base.C.Algebraic
     Z3.Base.C.Api
     Z3.Base.C.AstContainers
