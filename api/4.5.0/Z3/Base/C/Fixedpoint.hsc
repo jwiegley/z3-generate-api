@@ -1,3 +1,4 @@
+{-# LANGUAGE EmptyDataDecls #-}
 {-# OPTIONS_GHC -fno-warn-unused-imports #-}
 #include <bindings.dsl.h>
 #include "z3_macros.h"
@@ -6,7 +7,7 @@
 
 module Z3.Base.C.Fixedpoint where
 import Foreign.Ptr
-#strict_import
+import Foreign.C.Types
 import Z3.Base.C.Api
 #ccall Z3_mk_fixedpoint , <Z3_context> -> IO <Z3_fixedpoint>
 #ccall Z3_fixedpoint_inc_ref , <Z3_context> -> <Z3_fixedpoint> -> IO ()

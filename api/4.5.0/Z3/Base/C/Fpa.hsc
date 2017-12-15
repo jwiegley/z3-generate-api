@@ -1,3 +1,4 @@
+{-# LANGUAGE EmptyDataDecls #-}
 {-# OPTIONS_GHC -fno-warn-unused-imports #-}
 #include <bindings.dsl.h>
 #include "z3_macros.h"
@@ -6,7 +7,7 @@
 
 module Z3.Base.C.Fpa where
 import Foreign.Ptr
-#strict_import
+import Foreign.C.Types
 import Z3.Base.C.Api
 #ccall Z3_mk_fpa_rounding_mode_sort , <Z3_context> -> IO <Z3_sort>
 #ccall Z3_mk_fpa_round_nearest_ties_to_even , <Z3_context> -> IO <Z3_ast>

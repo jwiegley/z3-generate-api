@@ -7,13 +7,12 @@ cPreface: |
   #include "#{path}/z3_macros.h"
   #{includes}
 hscPreface: |
+  {-# LANGUAGE EmptyDataDecls #-}
   {-# OPTIONS_GHC -fno-warn-unused-imports #-}
-  #include <bindings.dsl.h>
-  #include "z3_macros.h"
   #{includes}
   module Z3.Base.C#{module} where
   import Foreign.Ptr
-  #strict_import
+  import Foreign.C.Types
 headersPath: 'z3-#{version}/src/api'
 headers:
   - z3_api.h

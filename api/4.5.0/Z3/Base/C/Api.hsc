@@ -1,3 +1,4 @@
+{-# LANGUAGE EmptyDataDecls #-}
 {-# OPTIONS_GHC -fno-warn-unused-imports #-}
 #include <bindings.dsl.h>
 #include "z3_macros.h"
@@ -5,7 +6,7 @@
 
 module Z3.Base.C.Api where
 import Foreign.Ptr
-#strict_import
+import Foreign.C.Types
 data Z3_app
 type C'Z3_app = Ptr Z3_app
 data Z3_param_descrs
