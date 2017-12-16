@@ -1,0 +1,29 @@
+name:           z3-base-c
+version:        1.0.0
+synopsis:       Z3 Base C API
+description:    Z3 Base C API
+category:       System
+author:         John Wiegley
+maintainer:     johnw@newartisans.com
+license:        BSD3
+build-type:     Simple
+cabal-version:  >= 1.10
+
+library
+  exposed-modules:
+    Z3.Base.C
+  other-modules:
+    Z3.Base.C.Algebraic
+    Z3.Base.C.Api
+    Z3.Base.C.AstContainers
+    Z3.Base.C.Fixedpoint
+    Z3.Base.C.Fpa
+    Z3.Base.C.Interp
+    Z3.Base.C.Optimization
+    Z3.Base.C.Polynomial
+    Z3.Base.C.Rcf
+  include-dirs: z3-4.5.0/src/api
+  build-depends:
+      base                  >= 4.7  && < 5.0
+    , bindings-DSL
+  default-language: Haskell2010

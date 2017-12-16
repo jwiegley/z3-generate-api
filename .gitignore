@@ -3,3 +3,4 @@ shell.nix
 dist/
 /.dir-locals.el
 /api/4.5.0/z3-4.5.0/
+/api/4.5.0-20171106/z3-4.5.0-20171106/

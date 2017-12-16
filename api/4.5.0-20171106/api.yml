@@ -1,0 +1,43 @@
+version: 4.5.0-20171106
+gitURI: https://github.com/Z3Prover/z3
+gitTag: '3350f32e1f2c01c9df63b7d71899796a18ce2272'
+gitWorkdir: 'z3-#{version}'
+cPreface: |
+  #include <stdio.h>
+  #include "#{path}/z3_macros.h"
+  #{includes}
+hscPreface: |
+  {-# LANGUAGE EmptyDataDecls #-}
+  {-# OPTIONS_GHC -fno-warn-unused-imports #-}
+  #{includes}
+  module Z3.Base.C#{module} where
+  import Foreign.Ptr
+  import Foreign.C.Types
+  import Foreign.C.String
+hscAddition: ''
+headersPath: 'z3-#{version}/src/api'
+headers:
+  - z3_api.h
+  - z3_algebraic.h
+  - z3_ast_containers.h
+  - z3_fixedpoint.h
+  - z3_fpa.h
+  - z3_interp.h
+  - z3_optimization.h
+  - z3_polynomial.h
+  - z3_rcf.h
+headerOutputPath: 'Z3/Base/C/#{name}.hsc'
+userApiModule: 'Z3/Base/C.hsc'
+substitutions:
+  - kind: ccall
+    name: Z3_error_handler
+    newKind: callback_t
+  - kind: ccall
+    name: Z3_fixedpoint_reduce_assign_callback_fptr
+    newKind: callback_t
+  - kind: ccall
+    name: Z3_fixedpoint_reduce_app_callback_fptr
+    newKind: callback_t
+docFixes:
+  - match: '\\ccode{- arg}'
+    subst: '\ccode{ - arg}'
