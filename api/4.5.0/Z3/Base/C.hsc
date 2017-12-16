@@ -4,6 +4,7 @@
 module Z3.Base.C where
 import Foreign.Ptr
 import Foreign.C.Types
+import Foreign.C.String
 data Z3_app
 type C'Z3_app = Ptr Z3_app
 data Z3_param_descrs
@@ -62,7 +63,11 @@ data Z3_solver
 type C'Z3_solver = Ptr Z3_solver
 data Z3_constructor
 type C'Z3_constructor = Ptr Z3_constructor
-type Z3_bool = CInt
+newtype Z3_bool = Z3_bool CUInt deriving (Eq, Ord)
+z3_false :: Z3_bool
+z3_false = Z3_bool (#const Z3_FALSE)
+z3_true :: Z3_bool
+z3_true = Z3_bool (#const Z3_TRUE)
 newtype Z3_lbool = Z3_lbool CUInt deriving (Eq, Ord)
 z3_l_false :: Z3_lbool
 z3_l_false = Z3_lbool (#const Z3_L_FALSE)
@@ -661,7 +666,7 @@ z3_goal_under_over = Z3_goal_prec (#const Z3_GOAL_UNDER_OVER)
 
 {- | Z3 Boolean type. It is just an alias for \c int. -}
 foreign import ccall unsafe "Z3_global_param_set"
-  z3_global_param_set :: (Ptr Z3_string) -> (Ptr Z3_string) -> IO ()
+  z3_global_param_set :: CString -> CString -> IO ()
 
 {- | Restore the value of all global (and module) parameters.
        This command will not affect already created objects (such as tactics and solvers).
@@ -679,13 +684,13 @@ foreign import ccall unsafe "Z3_global_param_reset_all"
        \remark This function cannot be invoked simultaneously from different threads without synchronization.
        The result string stored in param_value is stored in shared location. -}
 foreign import ccall unsafe "Z3_global_param_get"
-  z3_global_param_get :: (Ptr Z3_string) -> (Ptr Z3_string_ptr) -> IO CInt
+  z3_global_param_get :: CString -> (Ptr Z3_string_ptr) -> IO Z3_bool
 foreign import ccall unsafe "Z3_mk_config"
   z3_mk_config :: IO (Ptr Z3_config)
 foreign import ccall unsafe "Z3_del_config"
   z3_del_config :: (Ptr Z3_config) -> IO ()
 foreign import ccall unsafe "Z3_set_param_value"
-  z3_set_param_value :: (Ptr Z3_config) -> (Ptr Z3_string) -> (Ptr Z3_string) -> IO ()
+  z3_set_param_value :: (Ptr Z3_config) -> CString -> CString -> IO ()
 foreign import ccall unsafe "Z3_mk_context"
   z3_mk_context :: (Ptr Z3_config) -> IO (Ptr Z3_context)
 
@@ -728,7 +733,7 @@ foreign import ccall unsafe "Z3_inc_ref"
 foreign import ccall unsafe "Z3_dec_ref"
   z3_dec_ref :: (Ptr Z3_context) -> (Ptr Z3_ast) -> IO ()
 foreign import ccall unsafe "Z3_update_param_value"
-  z3_update_param_value :: (Ptr Z3_context) -> (Ptr Z3_string) -> (Ptr Z3_string) -> IO ()
+  z3_update_param_value :: (Ptr Z3_context) -> CString -> CString -> IO ()
 
 {- | Interrupt the execution of a Z3 procedure.
        This procedure can be used to interrupt: solvers, simplifiers and tactics. -}
@@ -754,7 +759,7 @@ foreign import ccall unsafe "Z3_params_dec_ref"
 
 {- | Add a Boolean parameter \c k with value \c v to the parameter set \c p. -}
 foreign import ccall unsafe "Z3_params_set_bool"
-  z3_params_set_bool :: (Ptr Z3_context) -> (Ptr Z3_params) -> (Ptr Z3_symbol) -> CInt -> IO ()
+  z3_params_set_bool :: (Ptr Z3_context) -> (Ptr Z3_params) -> (Ptr Z3_symbol) -> Z3_bool -> IO ()
 
 {- | Add a unsigned parameter \c k with value \c v to the parameter set \c p. -}
 foreign import ccall unsafe "Z3_params_set_uint"
@@ -771,7 +776,7 @@ foreign import ccall unsafe "Z3_params_set_symbol"
 {- | Convert a parameter set into a string. This function is mainly used for printing the
        contents of a parameter set. -}
 foreign import ccall unsafe "Z3_params_to_string"
-  z3_params_to_string :: (Ptr Z3_context) -> (Ptr Z3_params) -> IO (Ptr Z3_string)
+  z3_params_to_string :: (Ptr Z3_context) -> (Ptr Z3_params) -> IO CString
 
 {- | Validate the parameter set \c p against the parameter description set \c d.
 
@@ -793,7 +798,7 @@ foreign import ccall unsafe "Z3_param_descrs_get_kind"
 
 {- | Return the number of parameters in the given parameter description set. -}
 foreign import ccall unsafe "Z3_param_descrs_size"
-  z3_param_descrs_size :: (Ptr Z3_context) -> (Ptr Z3_param_descrs) -> IO ()
+  z3_param_descrs_size :: (Ptr Z3_context) -> (Ptr Z3_param_descrs) -> IO CUInt
 
 {- | Return the number of parameters in the given parameter description set.
 
@@ -803,12 +808,12 @@ foreign import ccall unsafe "Z3_param_descrs_get_name"
 
 {- | Retrieve documentation string corresponding to parameter name \c s. -}
 foreign import ccall unsafe "Z3_param_descrs_get_documentation"
-  z3_param_descrs_get_documentation :: (Ptr Z3_context) -> (Ptr Z3_param_descrs) -> (Ptr Z3_symbol) -> IO (Ptr Z3_string)
+  z3_param_descrs_get_documentation :: (Ptr Z3_context) -> (Ptr Z3_param_descrs) -> (Ptr Z3_symbol) -> IO CString
 
 {- | Convert a parameter description set into a string. This function is mainly used for printing the
        contents of a parameter description set. -}
 foreign import ccall unsafe "Z3_param_descrs_to_string"
-  z3_param_descrs_to_string :: (Ptr Z3_context) -> (Ptr Z3_param_descrs) -> IO (Ptr Z3_string)
+  z3_param_descrs_to_string :: (Ptr Z3_context) -> (Ptr Z3_param_descrs) -> IO CString
 
 {- | Create a Z3 symbol using an integer.
 
@@ -827,7 +832,7 @@ foreign import ccall unsafe "Z3_mk_int_symbol"
 
        \sa Z3_mk_int_symbol -}
 foreign import ccall unsafe "Z3_mk_string_symbol"
-  z3_mk_string_symbol :: (Ptr Z3_context) -> (Ptr Z3_string) -> IO (Ptr Z3_symbol)
+  z3_mk_string_symbol :: (Ptr Z3_context) -> CString -> IO (Ptr Z3_symbol)
 
 {- | Create a free (uninterpreted) type using the given name (symbol).
 
@@ -875,7 +880,7 @@ foreign import ccall unsafe "Z3_mk_bv_sort"
 
        \sa Z3_get_finite_domain_sort_size -}
 foreign import ccall unsafe "Z3_mk_finite_domain_sort"
-  z3_mk_finite_domain_sort :: (Ptr Z3_context) -> (Ptr Z3_symbol) -> CULong -> IO (Ptr Z3_sort)
+  z3_mk_finite_domain_sort :: (Ptr Z3_context) -> (Ptr Z3_symbol) -> CULLong -> IO (Ptr Z3_sort)
 
 {- | Create an array type.
 
@@ -1052,7 +1057,7 @@ foreign import ccall unsafe "Z3_mk_const"
 
        \sa Z3_mk_func_decl -}
 foreign import ccall unsafe "Z3_mk_fresh_func_decl"
-  z3_mk_fresh_func_decl :: (Ptr Z3_context) -> (Ptr Z3_string) -> CUInt -> Ptr (Ptr Z3_sort) -> (Ptr Z3_sort) -> IO (Ptr Z3_func_decl)
+  z3_mk_fresh_func_decl :: (Ptr Z3_context) -> CString -> CUInt -> Ptr (Ptr Z3_sort) -> (Ptr Z3_sort) -> IO (Ptr Z3_func_decl)
 
 {- | Declare and create a fresh constant.
 
@@ -1064,7 +1069,7 @@ foreign import ccall unsafe "Z3_mk_fresh_func_decl"
        \sa Z3_mk_func_decl
        \sa Z3_mk_app -}
 foreign import ccall unsafe "Z3_mk_fresh_const"
-  z3_mk_fresh_const :: (Ptr Z3_context) -> (Ptr Z3_string) -> (Ptr Z3_sort) -> IO (Ptr Z3_ast)
+  z3_mk_fresh_const :: (Ptr Z3_context) -> CString -> (Ptr Z3_sort) -> IO (Ptr Z3_ast)
 
 {- | Create an AST node representing \c true. -}
 foreign import ccall unsafe "Z3_mk_true"
@@ -1572,14 +1577,14 @@ foreign import ccall unsafe "Z3_mk_int2bv"
 
        The node \c t1 must have a bit-vector sort. -}
 foreign import ccall unsafe "Z3_mk_bv2int"
-  z3_mk_bv2int :: (Ptr Z3_context) -> (Ptr Z3_ast) -> CInt -> IO (Ptr Z3_ast)
+  z3_mk_bv2int :: (Ptr Z3_context) -> (Ptr Z3_ast) -> Z3_bool -> IO (Ptr Z3_ast)
 
 {- | Create a predicate that checks that the bit-wise addition
        of \c t1 and \c t2 does not overflow.
 
        The nodes \c t1 and \c t2 must have the same bit-vector sort. -}
 foreign import ccall unsafe "Z3_mk_bvadd_no_overflow"
-  z3_mk_bvadd_no_overflow :: (Ptr Z3_context) -> (Ptr Z3_ast) -> (Ptr Z3_ast) -> CInt -> IO (Ptr Z3_ast)
+  z3_mk_bvadd_no_overflow :: (Ptr Z3_context) -> (Ptr Z3_ast) -> (Ptr Z3_ast) -> Z3_bool -> IO (Ptr Z3_ast)
 
 {- | Create a predicate that checks that the bit-wise signed addition
        of \c t1 and \c t2 does not underflow.
@@ -1600,7 +1605,7 @@ foreign import ccall unsafe "Z3_mk_bvsub_no_overflow"
 
        The nodes \c t1 and \c t2 must have the same bit-vector sort. -}
 foreign import ccall unsafe "Z3_mk_bvsub_no_underflow"
-  z3_mk_bvsub_no_underflow :: (Ptr Z3_context) -> (Ptr Z3_ast) -> (Ptr Z3_ast) -> CInt -> IO (Ptr Z3_ast)
+  z3_mk_bvsub_no_underflow :: (Ptr Z3_context) -> (Ptr Z3_ast) -> (Ptr Z3_ast) -> Z3_bool -> IO (Ptr Z3_ast)
 
 {- | Create a predicate that checks that the bit-wise signed division
        of \c t1 and \c t2 does not overflow.
@@ -1621,7 +1626,7 @@ foreign import ccall unsafe "Z3_mk_bvneg_no_overflow"
 
        The nodes \c t1 and \c t2 must have the same bit-vector sort. -}
 foreign import ccall unsafe "Z3_mk_bvmul_no_overflow"
-  z3_mk_bvmul_no_overflow :: (Ptr Z3_context) -> (Ptr Z3_ast) -> (Ptr Z3_ast) -> CInt -> IO (Ptr Z3_ast)
+  z3_mk_bvmul_no_overflow :: (Ptr Z3_context) -> (Ptr Z3_ast) -> (Ptr Z3_ast) -> Z3_bool -> IO (Ptr Z3_ast)
 
 {- | Create a predicate that checks that the bit-wise signed multiplication
        of \c t1 and \c t2 does not underflow.
@@ -1755,7 +1760,7 @@ foreign import ccall unsafe "Z3_mk_array_ext"
        \sa Z3_mk_int
        \sa Z3_mk_unsigned_int -}
 foreign import ccall unsafe "Z3_mk_numeral"
-  z3_mk_numeral :: (Ptr Z3_context) -> (Ptr Z3_string) -> (Ptr Z3_sort) -> IO (Ptr Z3_ast)
+  z3_mk_numeral :: (Ptr Z3_context) -> CString -> (Ptr Z3_sort) -> IO (Ptr Z3_ast)
 
 {- | Create a real from a fraction.
 
@@ -1796,7 +1801,7 @@ foreign import ccall unsafe "Z3_mk_unsigned_int"
 
        \sa Z3_mk_numeral -}
 foreign import ccall unsafe "Z3_mk_int64"
-  z3_mk_int64 :: (Ptr Z3_context) -> CLong -> (Ptr Z3_sort) -> IO (Ptr Z3_ast)
+  z3_mk_int64 :: (Ptr Z3_context) -> CLLong -> (Ptr Z3_sort) -> IO (Ptr Z3_ast)
 
 {- | Create a numeral of a int, bit-vector, or finite-domain sort.
 
@@ -1805,7 +1810,7 @@ foreign import ccall unsafe "Z3_mk_int64"
 
        \sa Z3_mk_numeral -}
 foreign import ccall unsafe "Z3_mk_unsigned_int64"
-  z3_mk_unsigned_int64 :: (Ptr Z3_context) -> CULong -> (Ptr Z3_sort) -> IO (Ptr Z3_ast)
+  z3_mk_unsigned_int64 :: (Ptr Z3_context) -> CULLong -> (Ptr Z3_sort) -> IO (Ptr Z3_ast)
 
 {- | Create a sequence sort out of the sort for the elements. -}
 foreign import ccall unsafe "Z3_mk_seq_sort"
@@ -1813,7 +1818,7 @@ foreign import ccall unsafe "Z3_mk_seq_sort"
 
 {- | Check if \c s is a sequence sort. -}
 foreign import ccall unsafe "Z3_is_seq_sort"
-  z3_is_seq_sort :: (Ptr Z3_context) -> (Ptr Z3_sort) -> IO CInt
+  z3_is_seq_sort :: (Ptr Z3_context) -> (Ptr Z3_sort) -> IO Z3_bool
 
 {- | Create a regular expression sort out of a sequence sort. -}
 foreign import ccall unsafe "Z3_mk_re_sort"
@@ -1821,7 +1826,7 @@ foreign import ccall unsafe "Z3_mk_re_sort"
 
 {- | Check if \c s is a regular expression sort. -}
 foreign import ccall unsafe "Z3_is_re_sort"
-  z3_is_re_sort :: (Ptr Z3_context) -> (Ptr Z3_sort) -> IO CInt
+  z3_is_re_sort :: (Ptr Z3_context) -> (Ptr Z3_sort) -> IO Z3_bool
 
 {- | Create a sort for 8 bit strings.
 
@@ -1832,21 +1837,21 @@ foreign import ccall unsafe "Z3_mk_string_sort"
 
 {- | Check if \c s is a string sort. -}
 foreign import ccall unsafe "Z3_is_string_sort"
-  z3_is_string_sort :: (Ptr Z3_context) -> (Ptr Z3_sort) -> IO CInt
+  z3_is_string_sort :: (Ptr Z3_context) -> (Ptr Z3_sort) -> IO Z3_bool
 
 {- | Create a string constant out of the string that is passed in -}
 foreign import ccall unsafe "Z3_mk_string"
-  z3_mk_string :: (Ptr Z3_context) -> (Ptr Z3_string) -> IO (Ptr Z3_ast)
+  z3_mk_string :: (Ptr Z3_context) -> CString -> IO (Ptr Z3_ast)
 
 {- | Determine if \c s is a string constant. -}
 foreign import ccall unsafe "Z3_is_string"
-  z3_is_string :: (Ptr Z3_context) -> (Ptr Z3_ast) -> IO CInt
+  z3_is_string :: (Ptr Z3_context) -> (Ptr Z3_ast) -> IO Z3_bool
 
 {- | Retrieve the string constant stored in \c s.
 
        \pre  Z3_is_string(c, s) -}
 foreign import ccall unsafe "Z3_get_string"
-  z3_get_string :: (Ptr Z3_context) -> (Ptr Z3_ast) -> IO (Ptr Z3_string)
+  z3_get_string :: (Ptr Z3_context) -> (Ptr Z3_ast) -> IO CString
 
 {- | Create an empty sequence of the sequence sort \c seq.
 
@@ -2032,7 +2037,7 @@ foreign import ccall unsafe "Z3_mk_exists"
        \sa Z3_mk_forall
        \sa Z3_mk_exists -}
 foreign import ccall unsafe "Z3_mk_quantifier"
-  z3_mk_quantifier :: (Ptr Z3_context) -> CInt -> CUInt -> CUInt -> Ptr (Ptr Z3_pattern) -> CUInt -> Ptr (Ptr Z3_sort) -> Ptr (Ptr Z3_symbol) -> (Ptr Z3_ast) -> IO (Ptr Z3_ast)
+  z3_mk_quantifier :: (Ptr Z3_context) -> Z3_bool -> CUInt -> CUInt -> Ptr (Ptr Z3_pattern) -> CUInt -> Ptr (Ptr Z3_sort) -> Ptr (Ptr Z3_symbol) -> (Ptr Z3_ast) -> IO (Ptr Z3_ast)
 
 {- | Create a quantifier - universal or existential, with pattern hints, no patterns, and attributes
 
@@ -2055,7 +2060,7 @@ foreign import ccall unsafe "Z3_mk_quantifier"
        \sa Z3_mk_forall
        \sa Z3_mk_exists -}
 foreign import ccall unsafe "Z3_mk_quantifier_ex"
-  z3_mk_quantifier_ex :: (Ptr Z3_context) -> CInt -> CUInt -> (Ptr Z3_symbol) -> (Ptr Z3_symbol) -> CUInt -> Ptr (Ptr Z3_pattern) -> CUInt -> Ptr (Ptr Z3_ast) -> CUInt -> Ptr (Ptr Z3_sort) -> Ptr (Ptr Z3_symbol) -> (Ptr Z3_ast) -> IO (Ptr Z3_ast)
+  z3_mk_quantifier_ex :: (Ptr Z3_context) -> Z3_bool -> CUInt -> (Ptr Z3_symbol) -> (Ptr Z3_symbol) -> CUInt -> Ptr (Ptr Z3_pattern) -> CUInt -> Ptr (Ptr Z3_ast) -> CUInt -> Ptr (Ptr Z3_sort) -> Ptr (Ptr Z3_symbol) -> (Ptr Z3_ast) -> IO (Ptr Z3_ast)
 
 {- | Create a universal quantifier using a list of constants that
        will form the set of bound variables.
@@ -2096,12 +2101,12 @@ foreign import ccall unsafe "Z3_mk_exists_const"
 {- | Create a universal or existential quantifier using a list of
        constants that will form the set of bound variables. -}
 foreign import ccall unsafe "Z3_mk_quantifier_const"
-  z3_mk_quantifier_const :: (Ptr Z3_context) -> CInt -> CUInt -> CUInt -> Ptr (Ptr Z3_app) -> CUInt -> Ptr (Ptr Z3_pattern) -> (Ptr Z3_ast) -> IO (Ptr Z3_ast)
+  z3_mk_quantifier_const :: (Ptr Z3_context) -> Z3_bool -> CUInt -> CUInt -> Ptr (Ptr Z3_app) -> CUInt -> Ptr (Ptr Z3_pattern) -> (Ptr Z3_ast) -> IO (Ptr Z3_ast)
 
 {- | Create a universal or existential quantifier using a list of
        constants that will form the set of bound variables. -}
 foreign import ccall unsafe "Z3_mk_quantifier_const_ex"
-  z3_mk_quantifier_const_ex :: (Ptr Z3_context) -> CInt -> CUInt -> (Ptr Z3_symbol) -> (Ptr Z3_symbol) -> CUInt -> Ptr (Ptr Z3_app) -> CUInt -> Ptr (Ptr Z3_pattern) -> CUInt -> Ptr (Ptr Z3_ast) -> (Ptr Z3_ast) -> IO (Ptr Z3_ast)
+  z3_mk_quantifier_const_ex :: (Ptr Z3_context) -> Z3_bool -> CUInt -> (Ptr Z3_symbol) -> (Ptr Z3_symbol) -> CUInt -> Ptr (Ptr Z3_app) -> CUInt -> Ptr (Ptr Z3_pattern) -> CUInt -> Ptr (Ptr Z3_ast) -> (Ptr Z3_ast) -> IO (Ptr Z3_ast)
 
 {- | Return \c Z3_INT_SYMBOL if the symbol was constructed
        using #Z3_mk_int_symbol, and \c Z3_STRING_SYMBOL if the symbol
@@ -2127,7 +2132,7 @@ foreign import ccall unsafe "Z3_get_symbol_int"
 
        \sa Z3_mk_string_symbol -}
 foreign import ccall unsafe "Z3_get_symbol_string"
-  z3_get_symbol_string :: (Ptr Z3_context) -> (Ptr Z3_symbol) -> IO (Ptr Z3_string)
+  z3_get_symbol_string :: (Ptr Z3_context) -> (Ptr Z3_symbol) -> IO CString
 
 {- | Return the sort name as a symbol. -}
 foreign import ccall unsafe "Z3_get_sort_name"
@@ -2135,7 +2140,7 @@ foreign import ccall unsafe "Z3_get_sort_name"
 
 {- | Return a unique identifier for \c s. -}
 foreign import ccall unsafe "Z3_get_sort_id"
-  z3_get_sort_id :: (Ptr Z3_context) -> (Ptr Z3_sort) -> IO ()
+  z3_get_sort_id :: (Ptr Z3_context) -> (Ptr Z3_sort) -> IO CUInt
 
 {- | Convert a \c Z3_sort into \c Z3_ast. This is just type casting. -}
 foreign import ccall unsafe "Z3_sort_to_ast"
@@ -2143,7 +2148,7 @@ foreign import ccall unsafe "Z3_sort_to_ast"
 
 {- | compare sorts. -}
 foreign import ccall unsafe "Z3_is_eq_sort"
-  z3_is_eq_sort :: (Ptr Z3_context) -> (Ptr Z3_sort) -> (Ptr Z3_sort) -> IO CInt
+  z3_is_eq_sort :: (Ptr Z3_context) -> (Ptr Z3_sort) -> (Ptr Z3_sort) -> IO Z3_bool
 
 {- | Return the sort kind (e.g., array, tuple, int, bool, etc).
 
@@ -2158,12 +2163,12 @@ foreign import ccall unsafe "Z3_get_sort_kind"
        \sa Z3_mk_bv_sort
        \sa Z3_get_sort_kind -}
 foreign import ccall unsafe "Z3_get_bv_sort_size"
-  z3_get_bv_sort_size :: (Ptr Z3_context) -> (Ptr Z3_sort) -> IO ()
+  z3_get_bv_sort_size :: (Ptr Z3_context) -> (Ptr Z3_sort) -> IO CUInt
 
 {- | Store the size of the sort in \c r. Return Z3_FALSE if the call failed.
         That is, Z3_get_sort_kind(s) == Z3_FINITE_DOMAIN_SORT -}
 foreign import ccall unsafe "Z3_get_finite_domain_sort_size"
-  z3_get_finite_domain_sort_size :: (Ptr Z3_context) -> (Ptr Z3_sort) -> Ptr CULong -> IO CInt
+  z3_get_finite_domain_sort_size :: (Ptr Z3_context) -> (Ptr Z3_sort) -> Ptr CULLong -> IO Z3_bool
 
 {- | Return the domain of the given array sort.
 
@@ -2200,7 +2205,7 @@ foreign import ccall unsafe "Z3_get_tuple_sort_mk_decl"
        \sa Z3_mk_tuple_sort
        \sa Z3_get_sort_kind -}
 foreign import ccall unsafe "Z3_get_tuple_sort_num_fields"
-  z3_get_tuple_sort_num_fields :: (Ptr Z3_context) -> (Ptr Z3_sort) -> IO ()
+  z3_get_tuple_sort_num_fields :: (Ptr Z3_context) -> (Ptr Z3_sort) -> IO CUInt
 
 {- | Return the i-th field declaration (i.e., projection function declaration)
        of the given tuple sort.
@@ -2221,7 +2226,7 @@ foreign import ccall unsafe "Z3_get_tuple_sort_field_decl"
         \sa Z3_get_datatype_sort_recognizer
         \sa Z3_get_datatype_sort_constructor_accessor -}
 foreign import ccall unsafe "Z3_get_datatype_sort_num_constructors"
-  z3_get_datatype_sort_num_constructors :: (Ptr Z3_context) -> (Ptr Z3_sort) -> IO ()
+  z3_get_datatype_sort_num_constructors :: (Ptr Z3_context) -> (Ptr Z3_sort) -> IO CUInt
 
 {- | Return idx'th constructor.
 
@@ -2280,7 +2285,7 @@ foreign import ccall unsafe "Z3_datatype_update_field"
 
         \sa Z3_get_relation_column -}
 foreign import ccall unsafe "Z3_get_relation_arity"
-  z3_get_relation_arity :: (Ptr Z3_context) -> (Ptr Z3_sort) -> IO ()
+  z3_get_relation_arity :: (Ptr Z3_context) -> (Ptr Z3_sort) -> IO CUInt
 
 {- | Return sort at i'th column of relation sort.
 
@@ -2315,11 +2320,11 @@ foreign import ccall unsafe "Z3_func_decl_to_ast"
 
 {- | Compare terms. -}
 foreign import ccall unsafe "Z3_is_eq_func_decl"
-  z3_is_eq_func_decl :: (Ptr Z3_context) -> (Ptr Z3_func_decl) -> (Ptr Z3_func_decl) -> IO CInt
+  z3_is_eq_func_decl :: (Ptr Z3_context) -> (Ptr Z3_func_decl) -> (Ptr Z3_func_decl) -> IO Z3_bool
 
 {- | Return a unique identifier for \c f. -}
 foreign import ccall unsafe "Z3_get_func_decl_id"
-  z3_get_func_decl_id :: (Ptr Z3_context) -> (Ptr Z3_func_decl) -> IO ()
+  z3_get_func_decl_id :: (Ptr Z3_context) -> (Ptr Z3_func_decl) -> IO CUInt
 
 {- | Return the constant declaration name as a symbol. -}
 foreign import ccall unsafe "Z3_get_decl_name"
@@ -2333,13 +2338,13 @@ foreign import ccall unsafe "Z3_get_decl_kind"
 
        \sa Z3_get_arity -}
 foreign import ccall unsafe "Z3_get_domain_size"
-  z3_get_domain_size :: (Ptr Z3_context) -> (Ptr Z3_func_decl) -> IO ()
+  z3_get_domain_size :: (Ptr Z3_context) -> (Ptr Z3_func_decl) -> IO CUInt
 
 {- | Alias for \c Z3_get_domain_size.
 
        \sa Z3_get_domain_size -}
 foreign import ccall unsafe "Z3_get_arity"
-  z3_get_arity :: (Ptr Z3_context) -> (Ptr Z3_func_decl) -> IO ()
+  z3_get_arity :: (Ptr Z3_context) -> (Ptr Z3_func_decl) -> IO CUInt
 
 {- | Return the sort of the i-th parameter of the given function declaration.
 
@@ -2358,7 +2363,7 @@ foreign import ccall unsafe "Z3_get_range"
 
 {- | Return the number of parameters associated with a declaration. -}
 foreign import ccall unsafe "Z3_get_decl_num_parameters"
-  z3_get_decl_num_parameters :: (Ptr Z3_context) -> (Ptr Z3_func_decl) -> IO ()
+  z3_get_decl_num_parameters :: (Ptr Z3_context) -> (Ptr Z3_func_decl) -> IO CUInt
 
 {- | Return the parameter type associated with a declaration.
 
@@ -2408,7 +2413,7 @@ foreign import ccall unsafe "Z3_get_decl_func_decl_parameter"
 
        \pre Z3_get_decl_parameter_kind(c, d, idx) == Z3_PARAMETER_RATIONAL -}
 foreign import ccall unsafe "Z3_get_decl_rational_parameter"
-  z3_get_decl_rational_parameter :: (Ptr Z3_context) -> (Ptr Z3_func_decl) -> CUInt -> IO (Ptr Z3_string)
+  z3_get_decl_rational_parameter :: (Ptr Z3_context) -> (Ptr Z3_func_decl) -> CUInt -> IO CString
 
 {- | Convert a \c Z3_app into \c Z3_ast. This is just type casting. -}
 foreign import ccall unsafe "Z3_app_to_ast"
@@ -2421,7 +2426,7 @@ foreign import ccall unsafe "Z3_get_app_decl"
 {- | Return the number of argument of an application. If \c t
        is an constant, then the number of arguments is 0. -}
 foreign import ccall unsafe "Z3_get_app_num_args"
-  z3_get_app_num_args :: (Ptr Z3_context) -> (Ptr Z3_app) -> IO ()
+  z3_get_app_num_args :: (Ptr Z3_context) -> (Ptr Z3_app) -> IO CUInt
 
 {- | Return the i-th argument of the given application.
 
@@ -2431,7 +2436,7 @@ foreign import ccall unsafe "Z3_get_app_arg"
 
 {- | Compare terms. -}
 foreign import ccall unsafe "Z3_is_eq_ast"
-  z3_is_eq_ast :: (Ptr Z3_context) -> (Ptr Z3_ast) -> (Ptr Z3_ast) -> IO CInt
+  z3_is_eq_ast :: (Ptr Z3_context) -> (Ptr Z3_ast) -> (Ptr Z3_ast) -> IO Z3_bool
 
 {- | Return a unique identifier for \c t.
         The identifier is unique up to structural equality. Thus, two ast nodes
@@ -2441,13 +2446,13 @@ foreign import ccall unsafe "Z3_is_eq_ast"
         Variables and quantifiers are also assigned different identifiers according to
         their structure. -}
 foreign import ccall unsafe "Z3_get_ast_id"
-  z3_get_ast_id :: (Ptr Z3_context) -> (Ptr Z3_ast) -> IO ()
+  z3_get_ast_id :: (Ptr Z3_context) -> (Ptr Z3_ast) -> IO CUInt
 
 {- | Return a hash code for the given AST.
        The hash code is structural. You can use Z3_get_ast_id interchangably with
        this function. -}
 foreign import ccall unsafe "Z3_get_ast_hash"
-  z3_get_ast_hash :: (Ptr Z3_context) -> (Ptr Z3_ast) -> IO ()
+  z3_get_ast_hash :: (Ptr Z3_context) -> (Ptr Z3_ast) -> IO CUInt
 
 {- | Return the sort of an AST node.
 
@@ -2457,7 +2462,7 @@ foreign import ccall unsafe "Z3_get_sort"
 
 {- | Return true if the given expression \c t is well sorted. -}
 foreign import ccall unsafe "Z3_is_well_sorted"
-  z3_is_well_sorted :: (Ptr Z3_context) -> (Ptr Z3_ast) -> IO CInt
+  z3_is_well_sorted :: (Ptr Z3_context) -> (Ptr Z3_ast) -> IO Z3_bool
 
 {- | Return Z3_L_TRUE if \c a is true, Z3_L_FALSE if it is false, and Z3_L_UNDEF otherwise. -}
 foreign import ccall unsafe "Z3_get_bool_value"
@@ -2467,13 +2472,13 @@ foreign import ccall unsafe "Z3_get_bool_value"
 foreign import ccall unsafe "Z3_get_ast_kind"
   z3_get_ast_kind :: (Ptr Z3_context) -> (Ptr Z3_ast) -> IO Z3_ast_kind
 foreign import ccall unsafe "Z3_is_app"
-  z3_is_app :: (Ptr Z3_context) -> (Ptr Z3_ast) -> IO CInt
+  z3_is_app :: (Ptr Z3_context) -> (Ptr Z3_ast) -> IO Z3_bool
 foreign import ccall unsafe "Z3_is_numeral_ast"
-  z3_is_numeral_ast :: (Ptr Z3_context) -> (Ptr Z3_ast) -> IO CInt
+  z3_is_numeral_ast :: (Ptr Z3_context) -> (Ptr Z3_ast) -> IO Z3_bool
 
 {- | Return true if the give AST is a real algebraic number. -}
 foreign import ccall unsafe "Z3_is_algebraic_number"
-  z3_is_algebraic_number :: (Ptr Z3_context) -> (Ptr Z3_ast) -> IO CInt
+  z3_is_algebraic_number :: (Ptr Z3_context) -> (Ptr Z3_ast) -> IO Z3_bool
 
 {- | Convert an \c ast into an \c APP_AST. This is just type casting.
 
@@ -2491,14 +2496,14 @@ foreign import ccall unsafe "Z3_to_func_decl"
 
        \pre Z3_get_ast_kind(c, a) == Z3_NUMERAL_AST -}
 foreign import ccall unsafe "Z3_get_numeral_string"
-  z3_get_numeral_string :: (Ptr Z3_context) -> (Ptr Z3_ast) -> IO (Ptr Z3_string)
+  z3_get_numeral_string :: (Ptr Z3_context) -> (Ptr Z3_ast) -> IO CString
 
 {- | Return numeral as a string in decimal notation.
        The result has at most \c precision decimal places.
 
        \pre Z3_get_ast_kind(c, a) == Z3_NUMERAL_AST || Z3_is_algebraic_number(c, a) -}
 foreign import ccall unsafe "Z3_get_numeral_decimal_string"
-  z3_get_numeral_decimal_string :: (Ptr Z3_context) -> (Ptr Z3_ast) -> CUInt -> IO (Ptr Z3_string)
+  z3_get_numeral_decimal_string :: (Ptr Z3_context) -> (Ptr Z3_ast) -> CUInt -> IO CString
 
 {- | Return the numerator (as a numeral AST) of a numeral AST of sort Real.
 
@@ -2523,7 +2528,7 @@ foreign import ccall unsafe "Z3_get_denominator"
 
        \pre Z3_get_ast_kind(a) == Z3_NUMERAL_AST -}
 foreign import ccall unsafe "Z3_get_numeral_small"
-  z3_get_numeral_small :: (Ptr Z3_context) -> (Ptr Z3_ast) -> Ptr CLong -> Ptr CLong -> IO CInt
+  z3_get_numeral_small :: (Ptr Z3_context) -> (Ptr Z3_ast) -> Ptr CLLong -> Ptr CLLong -> IO Z3_bool
 
 {- | Similar to #Z3_get_numeral_string, but only succeeds if
        the value can fit in a machine int. Return Z3_TRUE if the call succeeded.
@@ -2532,7 +2537,7 @@ foreign import ccall unsafe "Z3_get_numeral_small"
 
        \sa Z3_get_numeral_string -}
 foreign import ccall unsafe "Z3_get_numeral_int"
-  z3_get_numeral_int :: (Ptr Z3_context) -> (Ptr Z3_ast) -> Ptr CInt -> IO CInt
+  z3_get_numeral_int :: (Ptr Z3_context) -> (Ptr Z3_ast) -> Ptr CInt -> IO Z3_bool
 
 {- | Similar to #Z3_get_numeral_string, but only succeeds if
        the value can fit in a machine unsigned int. Return Z3_TRUE if the call succeeded.
@@ -2541,7 +2546,7 @@ foreign import ccall unsafe "Z3_get_numeral_int"
 
        \sa Z3_get_numeral_string -}
 foreign import ccall unsafe "Z3_get_numeral_uint"
-  z3_get_numeral_uint :: (Ptr Z3_context) -> (Ptr Z3_ast) -> Ptr CUInt -> IO CInt
+  z3_get_numeral_uint :: (Ptr Z3_context) -> (Ptr Z3_ast) -> Ptr CUInt -> IO Z3_bool
 
 {- | Similar to #Z3_get_numeral_string, but only succeeds if
        the value can fit in a machine unsigned __int64 int. Return Z3_TRUE if the call succeeded.
@@ -2550,7 +2555,7 @@ foreign import ccall unsafe "Z3_get_numeral_uint"
 
        \sa Z3_get_numeral_string -}
 foreign import ccall unsafe "Z3_get_numeral_uint64"
-  z3_get_numeral_uint64 :: (Ptr Z3_context) -> (Ptr Z3_ast) -> Ptr CULong -> IO CInt
+  z3_get_numeral_uint64 :: (Ptr Z3_context) -> (Ptr Z3_ast) -> Ptr CULLong -> IO Z3_bool
 
 {- | Similar to #Z3_get_numeral_string, but only succeeds if
        the value can fit in a machine __int64 int. Return Z3_TRUE if the call succeeded.
@@ -2559,7 +2564,7 @@ foreign import ccall unsafe "Z3_get_numeral_uint64"
 
        \sa Z3_get_numeral_string -}
 foreign import ccall unsafe "Z3_get_numeral_int64"
-  z3_get_numeral_int64 :: (Ptr Z3_context) -> (Ptr Z3_ast) -> Ptr CLong -> IO CInt
+  z3_get_numeral_int64 :: (Ptr Z3_context) -> (Ptr Z3_ast) -> Ptr CLLong -> IO Z3_bool
 
 {- | Similar to #Z3_get_numeral_string, but only succeeds if
        the value can fit as a rational number as machine __int64 int. Return Z3_TRUE if the call succeeded.
@@ -2568,7 +2573,7 @@ foreign import ccall unsafe "Z3_get_numeral_int64"
 
        \sa Z3_get_numeral_string -}
 foreign import ccall unsafe "Z3_get_numeral_rational_int64"
-  z3_get_numeral_rational_int64 :: (Ptr Z3_context) -> (Ptr Z3_ast) -> Ptr CLong -> Ptr CLong -> IO CInt
+  z3_get_numeral_rational_int64 :: (Ptr Z3_context) -> (Ptr Z3_ast) -> Ptr CLLong -> Ptr CLLong -> IO Z3_bool
 
 {- | Return a lower bound for the given real algebraic number.
        The interval isolating the number is smaller than 1/10^precision.
@@ -2592,7 +2597,7 @@ foreign import ccall unsafe "Z3_pattern_to_ast"
 
 {- | Return number of terms in pattern. -}
 foreign import ccall unsafe "Z3_get_pattern_num_terms"
-  z3_get_pattern_num_terms :: (Ptr Z3_context) -> (Ptr Z3_pattern) -> IO ()
+  z3_get_pattern_num_terms :: (Ptr Z3_context) -> (Ptr Z3_pattern) -> IO CUInt
 
 {- | Return i'th ast in pattern. -}
 foreign import ccall unsafe "Z3_get_pattern"
@@ -2602,25 +2607,25 @@ foreign import ccall unsafe "Z3_get_pattern"
 
        \pre Z3_get_ast_kind(a) == Z3_VAR_AST -}
 foreign import ccall unsafe "Z3_get_index_value"
-  z3_get_index_value :: (Ptr Z3_context) -> (Ptr Z3_ast) -> IO ()
+  z3_get_index_value :: (Ptr Z3_context) -> (Ptr Z3_ast) -> IO CUInt
 
 {- | Determine if quantifier is universal.
 
        \pre Z3_get_ast_kind(a) == Z3_QUANTIFIER_AST -}
 foreign import ccall unsafe "Z3_is_quantifier_forall"
-  z3_is_quantifier_forall :: (Ptr Z3_context) -> (Ptr Z3_ast) -> IO CInt
+  z3_is_quantifier_forall :: (Ptr Z3_context) -> (Ptr Z3_ast) -> IO Z3_bool
 
 {- | Obtain weight of quantifier.
 
        \pre Z3_get_ast_kind(a) == Z3_QUANTIFIER_AST -}
 foreign import ccall unsafe "Z3_get_quantifier_weight"
-  z3_get_quantifier_weight :: (Ptr Z3_context) -> (Ptr Z3_ast) -> IO ()
+  z3_get_quantifier_weight :: (Ptr Z3_context) -> (Ptr Z3_ast) -> IO CUInt
 
 {- | Return number of patterns used in quantifier.
 
        \pre Z3_get_ast_kind(a) == Z3_QUANTIFIER_AST -}
 foreign import ccall unsafe "Z3_get_quantifier_num_patterns"
-  z3_get_quantifier_num_patterns :: (Ptr Z3_context) -> (Ptr Z3_ast) -> IO ()
+  z3_get_quantifier_num_patterns :: (Ptr Z3_context) -> (Ptr Z3_ast) -> IO CUInt
 
 {- | Return i'th pattern.
 
@@ -2632,7 +2637,7 @@ foreign import ccall unsafe "Z3_get_quantifier_pattern_ast"
 
        \pre Z3_get_ast_kind(a) == Z3_QUANTIFIER_AST -}
 foreign import ccall unsafe "Z3_get_quantifier_num_no_patterns"
-  z3_get_quantifier_num_no_patterns :: (Ptr Z3_context) -> (Ptr Z3_ast) -> IO ()
+  z3_get_quantifier_num_no_patterns :: (Ptr Z3_context) -> (Ptr Z3_ast) -> IO CUInt
 
 {- | Return i'th no_pattern.
 
@@ -2644,7 +2649,7 @@ foreign import ccall unsafe "Z3_get_quantifier_no_pattern_ast"
 
        \pre Z3_get_ast_kind(a) == Z3_QUANTIFIER_AST -}
 foreign import ccall unsafe "Z3_get_quantifier_num_bound"
-  z3_get_quantifier_num_bound :: (Ptr Z3_context) -> (Ptr Z3_ast) -> IO ()
+  z3_get_quantifier_num_bound :: (Ptr Z3_context) -> (Ptr Z3_ast) -> IO CUInt
 
 {- | Return symbol of the i'th bound variable.
 
@@ -2683,7 +2688,7 @@ foreign import ccall unsafe "Z3_simplify_ex"
 
 {- | Return a string describing all available parameters. -}
 foreign import ccall unsafe "Z3_simplify_get_help"
-  z3_simplify_get_help :: (Ptr Z3_context) -> IO (Ptr Z3_string)
+  z3_simplify_get_help :: (Ptr Z3_context) -> IO CString
 
 {- | Return the parameter description set for the simplify procedure. -}
 foreign import ccall unsafe "Z3_simplify_get_param_descrs"
@@ -2741,7 +2746,7 @@ foreign import ccall unsafe "Z3_model_dec_ref"
 
        - \c Z3_interrupt was invoked during evaluation. -}
 foreign import ccall unsafe "Z3_model_eval"
-  z3_model_eval :: (Ptr Z3_context) -> (Ptr Z3_model) -> (Ptr Z3_ast) -> CInt -> Ptr (Ptr Z3_ast) -> IO CInt
+  z3_model_eval :: (Ptr Z3_context) -> (Ptr Z3_model) -> (Ptr Z3_ast) -> Z3_bool -> Ptr (Ptr Z3_ast) -> IO Z3_bool
 
 {- | Return the interpretation (i.e., assignment) of constant \c a in the model \c m.
        Return \c NULL, if the model does not assign an interpretation for \c a.
@@ -2753,7 +2758,7 @@ foreign import ccall unsafe "Z3_model_get_const_interp"
 
 {- | Test if there exists an interpretation (i.e., assignment) for \c a in the model \c m. -}
 foreign import ccall unsafe "Z3_model_has_interp"
-  z3_model_has_interp :: (Ptr Z3_context) -> (Ptr Z3_model) -> (Ptr Z3_func_decl) -> IO CInt
+  z3_model_has_interp :: (Ptr Z3_context) -> (Ptr Z3_model) -> (Ptr Z3_func_decl) -> IO Z3_bool
 
 {- | Return the interpretation of the function \c f in the model \c m.
        Return \c NULL, if the model does not assign an interpretation for \c f.
@@ -2770,7 +2775,7 @@ foreign import ccall unsafe "Z3_model_get_func_interp"
 
        \sa Z3_model_get_const_decl -}
 foreign import ccall unsafe "Z3_model_get_num_consts"
-  z3_model_get_num_consts :: (Ptr Z3_context) -> (Ptr Z3_model) -> IO ()
+  z3_model_get_num_consts :: (Ptr Z3_context) -> (Ptr Z3_model) -> IO CUInt
 
 {- | Return the i-th constant in the given model.
 
@@ -2785,7 +2790,7 @@ foreign import ccall unsafe "Z3_model_get_const_decl"
        A function interpretation is represented as a finite map and an 'else' value.
        Each entry in the finite map represents the value of a function given a set of arguments. -}
 foreign import ccall unsafe "Z3_model_get_num_funcs"
-  z3_model_get_num_funcs :: (Ptr Z3_context) -> (Ptr Z3_model) -> IO ()
+  z3_model_get_num_funcs :: (Ptr Z3_context) -> (Ptr Z3_model) -> IO CUInt
 
 {- | Return the declaration of the i-th function in the given model.
 
@@ -2804,7 +2809,7 @@ foreign import ccall unsafe "Z3_model_get_func_decl"
        \sa Z3_model_get_sort
        \sa Z3_model_get_sort_universe -}
 foreign import ccall unsafe "Z3_model_get_num_sorts"
-  z3_model_get_num_sorts :: (Ptr Z3_context) -> (Ptr Z3_model) -> IO ()
+  z3_model_get_num_sorts :: (Ptr Z3_context) -> (Ptr Z3_model) -> IO CUInt
 
 {- | Return a uninterpreted sort that \c m assigns an interpretation.
 
@@ -2830,7 +2835,7 @@ foreign import ccall unsafe "Z3_model_get_sort_universe"
 
        \sa Z3_get_as_array_func_decl -}
 foreign import ccall unsafe "Z3_is_as_array"
-  z3_is_as_array :: (Ptr Z3_context) -> (Ptr Z3_ast) -> IO CInt
+  z3_is_as_array :: (Ptr Z3_context) -> (Ptr Z3_ast) -> IO Z3_bool
 
 {- | Return the function declaration \c f associated with a \ccode{(_ as_array f)} node.
 
@@ -2852,7 +2857,7 @@ foreign import ccall unsafe "Z3_func_interp_dec_ref"
        Each entry in the finite map represents the value of a function given a set of arguments.
        This procedure return the number of element in the finite map of \c f. -}
 foreign import ccall unsafe "Z3_func_interp_get_num_entries"
-  z3_func_interp_get_num_entries :: (Ptr Z3_context) -> (Ptr Z3_func_interp) -> IO ()
+  z3_func_interp_get_num_entries :: (Ptr Z3_context) -> (Ptr Z3_func_interp) -> IO CUInt
 
 {- | Return a "point" of the given function intepretation. It represents the
        value of \c f in a particular point.
@@ -2872,7 +2877,7 @@ foreign import ccall unsafe "Z3_func_interp_get_else"
 
 {- | Return the arity (number of arguments) of the given function interpretation. -}
 foreign import ccall unsafe "Z3_func_interp_get_arity"
-  z3_func_interp_get_arity :: (Ptr Z3_context) -> (Ptr Z3_func_interp) -> IO ()
+  z3_func_interp_get_arity :: (Ptr Z3_context) -> (Ptr Z3_func_interp) -> IO CUInt
 
 {- | Increment the reference counter of the given Z3_func_entry object. -}
 foreign import ccall unsafe "Z3_func_entry_inc_ref"
@@ -2895,7 +2900,7 @@ foreign import ccall unsafe "Z3_func_entry_get_value"
 
        \sa Z3_func_interp_get_entry -}
 foreign import ccall unsafe "Z3_func_entry_get_num_args"
-  z3_func_entry_get_num_args :: (Ptr Z3_context) -> (Ptr Z3_func_entry) -> IO ()
+  z3_func_entry_get_num_args :: (Ptr Z3_context) -> (Ptr Z3_func_entry) -> IO CUInt
 
 {- | Return an argument of a Z3_func_entry object.
 
@@ -2909,7 +2914,7 @@ foreign import ccall unsafe "Z3_func_entry_get_arg"
 
        extra_API('Z3_open_log', INT, (_in(STRING),)) -}
 foreign import ccall unsafe "Z3_open_log"
-  z3_open_log :: (Ptr Z3_string) -> IO CInt
+  z3_open_log :: CString -> IO Z3_bool
 
 {- | Append user-defined string to interaction log.
 
@@ -2919,7 +2924,7 @@ foreign import ccall unsafe "Z3_open_log"
 
        extra_API('Z3_append_log', VOID, (_in(STRING),)) -}
 foreign import ccall unsafe "Z3_append_log"
-  z3_append_log :: (Ptr Z3_string) -> IO ()
+  z3_append_log :: CString -> IO ()
 
 {- | Close interaction log.
 
@@ -2932,7 +2937,7 @@ foreign import ccall unsafe "Z3_close_log"
        Warnings are printed after passing \c true, warning messages are
        suppressed after calling this method with \c false. -}
 foreign import ccall unsafe "Z3_toggle_warning_messages"
-  z3_toggle_warning_messages :: CInt -> IO ()
+  z3_toggle_warning_messages :: Z3_bool -> IO ()
 
 {- | Select mode for the format used for pretty-printing AST nodes.
 
@@ -2959,13 +2964,13 @@ foreign import ccall unsafe "Z3_set_ast_print_mode"
        \sa Z3_pattern_to_string
        \sa Z3_sort_to_string -}
 foreign import ccall unsafe "Z3_ast_to_string"
-  z3_ast_to_string :: (Ptr Z3_context) -> (Ptr Z3_ast) -> IO (Ptr Z3_string)
+  z3_ast_to_string :: (Ptr Z3_context) -> (Ptr Z3_ast) -> IO CString
 foreign import ccall unsafe "Z3_pattern_to_string"
-  z3_pattern_to_string :: (Ptr Z3_context) -> (Ptr Z3_pattern) -> IO (Ptr Z3_string)
+  z3_pattern_to_string :: (Ptr Z3_context) -> (Ptr Z3_pattern) -> IO CString
 foreign import ccall unsafe "Z3_sort_to_string"
-  z3_sort_to_string :: (Ptr Z3_context) -> (Ptr Z3_sort) -> IO (Ptr Z3_string)
+  z3_sort_to_string :: (Ptr Z3_context) -> (Ptr Z3_sort) -> IO CString
 foreign import ccall unsafe "Z3_func_decl_to_string"
-  z3_func_decl_to_string :: (Ptr Z3_context) -> (Ptr Z3_func_decl) -> IO (Ptr Z3_string)
+  z3_func_decl_to_string :: (Ptr Z3_context) -> (Ptr Z3_func_decl) -> IO CString
 
 {- | Convert the given model into a string.
 
@@ -2973,7 +2978,7 @@ foreign import ccall unsafe "Z3_func_decl_to_string"
        be automatically deallocated when #Z3_del_context is invoked.
        So, the buffer is invalidated in the next call to \c Z3_model_to_string. -}
 foreign import ccall unsafe "Z3_model_to_string"
-  z3_model_to_string :: (Ptr Z3_context) -> (Ptr Z3_model) -> IO (Ptr Z3_string)
+  z3_model_to_string :: (Ptr Z3_context) -> (Ptr Z3_model) -> IO CString
 
 {- | Convert the given benchmark into SMT-LIB formatted string.
 
@@ -2990,18 +2995,18 @@ foreign import ccall unsafe "Z3_model_to_string"
        \param assumptions - auxiliary assumptions.
        \param formula - formula to be checked for consistency in conjunction with assumptions. -}
 foreign import ccall unsafe "Z3_benchmark_to_smtlib_string"
-  z3_benchmark_to_smtlib_string :: (Ptr Z3_context) -> (Ptr Z3_string) -> (Ptr Z3_string) -> (Ptr Z3_string) -> (Ptr Z3_string) -> CUInt -> Ptr (Ptr Z3_ast) -> (Ptr Z3_ast) -> IO (Ptr Z3_string)
+  z3_benchmark_to_smtlib_string :: (Ptr Z3_context) -> CString -> CString -> CString -> CString -> CUInt -> Ptr (Ptr Z3_ast) -> (Ptr Z3_ast) -> IO CString
 
 {- | Parse the given string using the SMT-LIB2 parser.
 
        It returns a formula comprising of the conjunction of assertions in the scope
        (up to push/pop) at the end of the string. -}
 foreign import ccall unsafe "Z3_parse_smtlib2_string"
-  z3_parse_smtlib2_string :: (Ptr Z3_context) -> (Ptr Z3_string) -> CUInt -> Ptr (Ptr Z3_symbol) -> Ptr (Ptr Z3_sort) -> CUInt -> Ptr (Ptr Z3_symbol) -> Ptr (Ptr Z3_func_decl) -> IO (Ptr Z3_ast)
+  z3_parse_smtlib2_string :: (Ptr Z3_context) -> CString -> CUInt -> Ptr (Ptr Z3_symbol) -> Ptr (Ptr Z3_sort) -> CUInt -> Ptr (Ptr Z3_symbol) -> Ptr (Ptr Z3_func_decl) -> IO (Ptr Z3_ast)
 
 {- | Similar to #Z3_parse_smtlib2_string, but reads the benchmark from a file. -}
 foreign import ccall unsafe "Z3_parse_smtlib2_file"
-  z3_parse_smtlib2_file :: (Ptr Z3_context) -> (Ptr Z3_string) -> CUInt -> Ptr (Ptr Z3_symbol) -> Ptr (Ptr Z3_sort) -> CUInt -> Ptr (Ptr Z3_symbol) -> Ptr (Ptr Z3_func_decl) -> IO (Ptr Z3_ast)
+  z3_parse_smtlib2_file :: (Ptr Z3_context) -> CString -> CUInt -> Ptr (Ptr Z3_symbol) -> Ptr (Ptr Z3_sort) -> CUInt -> Ptr (Ptr Z3_symbol) -> Ptr (Ptr Z3_func_decl) -> IO (Ptr Z3_ast)
 
 {- | Parse the given string using the SMT-LIB parser.
 
@@ -3014,15 +3019,15 @@ foreign import ccall unsafe "Z3_parse_smtlib2_file"
        #Z3_get_smtlib_num_formulas, #Z3_get_smtlib_formula, #Z3_get_smtlib_num_assumptions, #Z3_get_smtlib_assumption,
        #Z3_get_smtlib_num_decls, and #Z3_get_smtlib_decl. -}
 foreign import ccall unsafe "Z3_parse_smtlib_string"
-  z3_parse_smtlib_string :: (Ptr Z3_context) -> (Ptr Z3_string) -> CUInt -> Ptr (Ptr Z3_symbol) -> Ptr (Ptr Z3_sort) -> CUInt -> Ptr (Ptr Z3_symbol) -> Ptr (Ptr Z3_func_decl) -> IO ()
+  z3_parse_smtlib_string :: (Ptr Z3_context) -> CString -> CUInt -> Ptr (Ptr Z3_symbol) -> Ptr (Ptr Z3_sort) -> CUInt -> Ptr (Ptr Z3_symbol) -> Ptr (Ptr Z3_func_decl) -> IO ()
 
 {- | Similar to #Z3_parse_smtlib_string, but reads the benchmark from a file. -}
 foreign import ccall unsafe "Z3_parse_smtlib_file"
-  z3_parse_smtlib_file :: (Ptr Z3_context) -> (Ptr Z3_string) -> CUInt -> Ptr (Ptr Z3_symbol) -> Ptr (Ptr Z3_sort) -> CUInt -> Ptr (Ptr Z3_symbol) -> Ptr (Ptr Z3_func_decl) -> IO ()
+  z3_parse_smtlib_file :: (Ptr Z3_context) -> CString -> CUInt -> Ptr (Ptr Z3_symbol) -> Ptr (Ptr Z3_sort) -> CUInt -> Ptr (Ptr Z3_symbol) -> Ptr (Ptr Z3_func_decl) -> IO ()
 
 {- | Return the number of SMTLIB formulas parsed by the last call to #Z3_parse_smtlib_string or #Z3_parse_smtlib_file. -}
 foreign import ccall unsafe "Z3_get_smtlib_num_formulas"
-  z3_get_smtlib_num_formulas :: (Ptr Z3_context) -> IO ()
+  z3_get_smtlib_num_formulas :: (Ptr Z3_context) -> IO CUInt
 
 {- | Return the i-th formula parsed by the last call to #Z3_parse_smtlib_string or #Z3_parse_smtlib_file.
 
@@ -3032,7 +3037,7 @@ foreign import ccall unsafe "Z3_get_smtlib_formula"
 
 {- | Return the number of SMTLIB assumptions parsed by #Z3_parse_smtlib_string or #Z3_parse_smtlib_file. -}
 foreign import ccall unsafe "Z3_get_smtlib_num_assumptions"
-  z3_get_smtlib_num_assumptions :: (Ptr Z3_context) -> IO ()
+  z3_get_smtlib_num_assumptions :: (Ptr Z3_context) -> IO CUInt
 
 {- | Return the i-th assumption parsed by the last call to #Z3_parse_smtlib_string or #Z3_parse_smtlib_file.
 
@@ -3042,7 +3047,7 @@ foreign import ccall unsafe "Z3_get_smtlib_assumption"
 
 {- | Return the number of declarations parsed by #Z3_parse_smtlib_string or #Z3_parse_smtlib_file. -}
 foreign import ccall unsafe "Z3_get_smtlib_num_decls"
-  z3_get_smtlib_num_decls :: (Ptr Z3_context) -> IO ()
+  z3_get_smtlib_num_decls :: (Ptr Z3_context) -> IO CUInt
 
 {- | Return the i-th declaration parsed by the last call to #Z3_parse_smtlib_string or #Z3_parse_smtlib_file.
 
@@ -3052,7 +3057,7 @@ foreign import ccall unsafe "Z3_get_smtlib_decl"
 
 {- | Return the number of sorts parsed by #Z3_parse_smtlib_string or #Z3_parse_smtlib_file. -}
 foreign import ccall unsafe "Z3_get_smtlib_num_sorts"
-  z3_get_smtlib_num_sorts :: (Ptr Z3_context) -> IO ()
+  z3_get_smtlib_num_sorts :: (Ptr Z3_context) -> IO CUInt
 
 {- | Return the i-th sort parsed by the last call to #Z3_parse_smtlib_string or #Z3_parse_smtlib_file.
 
@@ -3062,7 +3067,7 @@ foreign import ccall unsafe "Z3_get_smtlib_sort"
 
 {- | Retrieve that last error message information generated from parsing. -}
 foreign import ccall unsafe "Z3_get_smtlib_error"
-  z3_get_smtlib_error :: (Ptr Z3_context) -> IO (Ptr Z3_string)
+  z3_get_smtlib_error :: (Ptr Z3_context) -> IO CString
 
 {- | Return the error code for the last API call.
 
@@ -3092,12 +3097,12 @@ foreign import ccall unsafe "Z3_set_error"
 
 {- | Return a string describing the given error code. -}
 foreign import ccall unsafe "Z3_get_error_msg"
-  z3_get_error_msg :: (Ptr Z3_context) -> Z3_error_code -> IO (Ptr Z3_string)
+  z3_get_error_msg :: (Ptr Z3_context) -> Z3_error_code -> IO CString
 
 {- | Return a string describing the given error code. 
        Retained function name for backwards compatibility within v4.1 -}
 foreign import ccall unsafe "Z3_get_error_msg_ex"
-  z3_get_error_msg_ex :: (Ptr Z3_context) -> Z3_error_code -> IO (Ptr Z3_string)
+  z3_get_error_msg_ex :: (Ptr Z3_context) -> Z3_error_code -> IO CString
 
 {- | Return Z3 version number information. -}
 foreign import ccall unsafe "Z3_get_version"
@@ -3105,17 +3110,17 @@ foreign import ccall unsafe "Z3_get_version"
 
 {- | Return a string that fully describes the version of Z3 in use. -}
 foreign import ccall unsafe "Z3_get_full_version"
-  z3_get_full_version :: IO (Ptr Z3_string)
+  z3_get_full_version :: IO CString
 
 {- | Enable tracing messages tagged as \c tag when Z3 is compiled in debug mode.
        It is a NOOP otherwise -}
 foreign import ccall unsafe "Z3_enable_trace"
-  z3_enable_trace :: (Ptr Z3_string) -> IO ()
+  z3_enable_trace :: CString -> IO ()
 
 {- | Disable tracing messages tagged as \c tag when Z3 is compiled in debug mode.
        It is a NOOP otherwise -}
 foreign import ccall unsafe "Z3_disable_trace"
-  z3_disable_trace :: (Ptr Z3_string) -> IO ()
+  z3_disable_trace :: CString -> IO ()
 
 {- | Reset all allocated resources.
 
@@ -3147,7 +3152,7 @@ foreign import ccall unsafe "Z3_finalize_memory"
        \remark Reference counting must be used to manage goals, even when the Z3_context was
        created using #Z3_mk_context instead of #Z3_mk_context_rc. -}
 foreign import ccall unsafe "Z3_mk_goal"
-  z3_mk_goal :: (Ptr Z3_context) -> CInt -> CInt -> CInt -> IO (Ptr Z3_goal)
+  z3_mk_goal :: (Ptr Z3_context) -> Z3_bool -> Z3_bool -> Z3_bool -> IO (Ptr Z3_goal)
 
 {- | Increment the reference counter of the given goal. -}
 foreign import ccall unsafe "Z3_goal_inc_ref"
@@ -3169,11 +3174,11 @@ foreign import ccall unsafe "Z3_goal_assert"
 
 {- | Return true if the given goal contains the formula \c false. -}
 foreign import ccall unsafe "Z3_goal_inconsistent"
-  z3_goal_inconsistent :: (Ptr Z3_context) -> (Ptr Z3_goal) -> IO CInt
+  z3_goal_inconsistent :: (Ptr Z3_context) -> (Ptr Z3_goal) -> IO Z3_bool
 
 {- | Return the depth of the given goal. It tracks how many transformations were applied to it. -}
 foreign import ccall unsafe "Z3_goal_depth"
-  z3_goal_depth :: (Ptr Z3_context) -> (Ptr Z3_goal) -> IO ()
+  z3_goal_depth :: (Ptr Z3_context) -> (Ptr Z3_goal) -> IO CUInt
 
 {- | Erase all formulas from the given goal. -}
 foreign import ccall unsafe "Z3_goal_reset"
@@ -3181,7 +3186,7 @@ foreign import ccall unsafe "Z3_goal_reset"
 
 {- | Return the number of formulas in the given goal. -}
 foreign import ccall unsafe "Z3_goal_size"
-  z3_goal_size :: (Ptr Z3_context) -> (Ptr Z3_goal) -> IO ()
+  z3_goal_size :: (Ptr Z3_context) -> (Ptr Z3_goal) -> IO CUInt
 
 {- | Return a formula from the given goal.
 
@@ -3191,15 +3196,15 @@ foreign import ccall unsafe "Z3_goal_formula"
 
 {- | Return the number of formulas, subformulas and terms in the given goal. -}
 foreign import ccall unsafe "Z3_goal_num_exprs"
-  z3_goal_num_exprs :: (Ptr Z3_context) -> (Ptr Z3_goal) -> IO ()
+  z3_goal_num_exprs :: (Ptr Z3_context) -> (Ptr Z3_goal) -> IO CUInt
 
 {- | Return true if the goal is empty, and it is precise or the product of a under approximation. -}
 foreign import ccall unsafe "Z3_goal_is_decided_sat"
-  z3_goal_is_decided_sat :: (Ptr Z3_context) -> (Ptr Z3_goal) -> IO CInt
+  z3_goal_is_decided_sat :: (Ptr Z3_context) -> (Ptr Z3_goal) -> IO Z3_bool
 
 {- | Return true if the goal contains false, and it is precise or the product of an over approximation. -}
 foreign import ccall unsafe "Z3_goal_is_decided_unsat"
-  z3_goal_is_decided_unsat :: (Ptr Z3_context) -> (Ptr Z3_goal) -> IO CInt
+  z3_goal_is_decided_unsat :: (Ptr Z3_context) -> (Ptr Z3_goal) -> IO Z3_bool
 
 {- | Copy a goal \c g from the context \c source to a the context \c target. -}
 foreign import ccall unsafe "Z3_goal_translate"
@@ -3207,7 +3212,7 @@ foreign import ccall unsafe "Z3_goal_translate"
 
 {- | Convert a goal into a string. -}
 foreign import ccall unsafe "Z3_goal_to_string"
-  z3_goal_to_string :: (Ptr Z3_context) -> (Ptr Z3_goal) -> IO (Ptr Z3_string)
+  z3_goal_to_string :: (Ptr Z3_context) -> (Ptr Z3_goal) -> IO CString
 
 {- | Return a tactic associated with the given name.
        The complete list of tactics may be obtained using the procedures #Z3_get_num_tactics and #Z3_get_tactic_name.
@@ -3215,7 +3220,7 @@ foreign import ccall unsafe "Z3_goal_to_string"
 
        Tactics are the basic building block for creating custom solvers for specific problem domains. -}
 foreign import ccall unsafe "Z3_mk_tactic"
-  z3_mk_tactic :: (Ptr Z3_context) -> (Ptr Z3_string) -> IO (Ptr Z3_tactic)
+  z3_mk_tactic :: (Ptr Z3_context) -> CString -> IO (Ptr Z3_tactic)
 
 {- | Increment the reference counter of the given tactic. -}
 foreign import ccall unsafe "Z3_tactic_inc_ref"
@@ -3232,7 +3237,7 @@ foreign import ccall unsafe "Z3_tactic_dec_ref"
        Probes are used to inspect a goal (aka problem) and collect information that may be used to decide
        which solver and/or preprocessing step will be used. -}
 foreign import ccall unsafe "Z3_mk_probe"
-  z3_mk_probe :: (Ptr Z3_context) -> (Ptr Z3_string) -> IO (Ptr Z3_probe)
+  z3_mk_probe :: (Ptr Z3_context) -> CString -> IO (Ptr Z3_probe)
 
 {- | Increment the reference counter of the given probe. -}
 foreign import ccall unsafe "Z3_probe_inc_ref"
@@ -3356,27 +3361,27 @@ foreign import ccall unsafe "Z3_probe_not"
 
 {- | Return the number of builtin tactics available in Z3. -}
 foreign import ccall unsafe "Z3_get_num_tactics"
-  z3_get_num_tactics :: (Ptr Z3_context) -> IO ()
+  z3_get_num_tactics :: (Ptr Z3_context) -> IO CUInt
 
 {- | Return the name of the idx tactic.
 
        \pre i < Z3_get_num_tactics(c) -}
 foreign import ccall unsafe "Z3_get_tactic_name"
-  z3_get_tactic_name :: (Ptr Z3_context) -> CUInt -> IO (Ptr Z3_string)
+  z3_get_tactic_name :: (Ptr Z3_context) -> CUInt -> IO CString
 
 {- | Return the number of builtin probes available in Z3. -}
 foreign import ccall unsafe "Z3_get_num_probes"
-  z3_get_num_probes :: (Ptr Z3_context) -> IO ()
+  z3_get_num_probes :: (Ptr Z3_context) -> IO CUInt
 
 {- | Return the name of the i probe.
 
        \pre i < Z3_get_num_probes(c) -}
 foreign import ccall unsafe "Z3_get_probe_name"
-  z3_get_probe_name :: (Ptr Z3_context) -> CUInt -> IO (Ptr Z3_string)
+  z3_get_probe_name :: (Ptr Z3_context) -> CUInt -> IO CString
 
 {- | Return a string containing a description of parameters accepted by the given tactic. -}
 foreign import ccall unsafe "Z3_tactic_get_help"
-  z3_tactic_get_help :: (Ptr Z3_context) -> (Ptr Z3_tactic) -> IO (Ptr Z3_string)
+  z3_tactic_get_help :: (Ptr Z3_context) -> (Ptr Z3_tactic) -> IO CString
 
 {- | Return the parameter description set for the given tactic object. -}
 foreign import ccall unsafe "Z3_tactic_get_param_descrs"
@@ -3384,11 +3389,11 @@ foreign import ccall unsafe "Z3_tactic_get_param_descrs"
 
 {- | Return a string containing a description of the tactic with the given name. -}
 foreign import ccall unsafe "Z3_tactic_get_descr"
-  z3_tactic_get_descr :: (Ptr Z3_context) -> (Ptr Z3_string) -> IO (Ptr Z3_string)
+  z3_tactic_get_descr :: (Ptr Z3_context) -> CString -> IO CString
 
 {- | Return a string containing a description of the probe with the given name. -}
 foreign import ccall unsafe "Z3_probe_get_descr"
-  z3_probe_get_descr :: (Ptr Z3_context) -> (Ptr Z3_string) -> IO (Ptr Z3_string)
+  z3_probe_get_descr :: (Ptr Z3_context) -> CString -> IO CString
 
 {- | Execute the probe over the goal. The probe always produce a double value.
        "Boolean" probes return 0.0 for false, and a value different from 0.0 for true. -}
@@ -3413,11 +3418,11 @@ foreign import ccall unsafe "Z3_apply_result_dec_ref"
 
 {- | Convert the \c Z3_apply_result object returned by #Z3_tactic_apply into a string. -}
 foreign import ccall unsafe "Z3_apply_result_to_string"
-  z3_apply_result_to_string :: (Ptr Z3_context) -> (Ptr Z3_apply_result) -> IO (Ptr Z3_string)
+  z3_apply_result_to_string :: (Ptr Z3_context) -> (Ptr Z3_apply_result) -> IO CString
 
 {- | Return the number of subgoals in the \c Z3_apply_result object returned by #Z3_tactic_apply. -}
 foreign import ccall unsafe "Z3_apply_result_get_num_subgoals"
-  z3_apply_result_get_num_subgoals :: (Ptr Z3_context) -> (Ptr Z3_apply_result) -> IO ()
+  z3_apply_result_get_num_subgoals :: (Ptr Z3_context) -> (Ptr Z3_apply_result) -> IO CUInt
 
 {- | Return one of the subgoals in the \c Z3_apply_result object returned by #Z3_tactic_apply.
 
@@ -3476,7 +3481,7 @@ foreign import ccall unsafe "Z3_solver_translate"
 
 {- | Return a string describing all solver available parameters. -}
 foreign import ccall unsafe "Z3_solver_get_help"
-  z3_solver_get_help :: (Ptr Z3_context) -> (Ptr Z3_solver) -> IO (Ptr Z3_string)
+  z3_solver_get_help :: (Ptr Z3_context) -> (Ptr Z3_solver) -> IO CString
 
 {- | Return the parameter description set for the given solver object. -}
 foreign import ccall unsafe "Z3_solver_get_param_descrs"
@@ -3519,7 +3524,7 @@ foreign import ccall unsafe "Z3_solver_reset"
        \sa Z3_solver_push
        \sa Z3_solver_pop -}
 foreign import ccall unsafe "Z3_solver_get_num_scopes"
-  z3_solver_get_num_scopes :: (Ptr Z3_context) -> (Ptr Z3_solver) -> IO ()
+  z3_solver_get_num_scopes :: (Ptr Z3_context) -> (Ptr Z3_solver) -> IO CUInt
 
 {- | Assert a constraint into the solver.
 
@@ -3614,7 +3619,7 @@ foreign import ccall unsafe "Z3_solver_get_unsat_core"
 {- | Return a brief justification for an "unknown" result (i.e., Z3_L_UNDEF) for
        the commands #Z3_solver_check and #Z3_solver_check_assumptions -}
 foreign import ccall unsafe "Z3_solver_get_reason_unknown"
-  z3_solver_get_reason_unknown :: (Ptr Z3_context) -> (Ptr Z3_solver) -> IO (Ptr Z3_string)
+  z3_solver_get_reason_unknown :: (Ptr Z3_context) -> (Ptr Z3_solver) -> IO CString
 
 {- | Return statistics for the given solver.
 
@@ -3624,11 +3629,11 @@ foreign import ccall unsafe "Z3_solver_get_statistics"
 
 {- | Convert a solver into a string. -}
 foreign import ccall unsafe "Z3_solver_to_string"
-  z3_solver_to_string :: (Ptr Z3_context) -> (Ptr Z3_solver) -> IO (Ptr Z3_string)
+  z3_solver_to_string :: (Ptr Z3_context) -> (Ptr Z3_solver) -> IO CString
 
 {- | Convert a statistics into a string. -}
 foreign import ccall unsafe "Z3_stats_to_string"
-  z3_stats_to_string :: (Ptr Z3_context) -> (Ptr Z3_stats) -> IO (Ptr Z3_string)
+  z3_stats_to_string :: (Ptr Z3_context) -> (Ptr Z3_stats) -> IO CString
 
 {- | Increment the reference counter of the given statistics object. -}
 foreign import ccall unsafe "Z3_stats_inc_ref"
@@ -3640,31 +3645,31 @@ foreign import ccall unsafe "Z3_stats_dec_ref"
 
 {- | Return the number of statistical data in \c s. -}
 foreign import ccall unsafe "Z3_stats_size"
-  z3_stats_size :: (Ptr Z3_context) -> (Ptr Z3_stats) -> IO ()
+  z3_stats_size :: (Ptr Z3_context) -> (Ptr Z3_stats) -> IO CUInt
 
 {- | Return the key (a string) for a particular statistical data.
 
        \pre idx < Z3_stats_size(c, s) -}
 foreign import ccall unsafe "Z3_stats_get_key"
-  z3_stats_get_key :: (Ptr Z3_context) -> (Ptr Z3_stats) -> CUInt -> IO (Ptr Z3_string)
+  z3_stats_get_key :: (Ptr Z3_context) -> (Ptr Z3_stats) -> CUInt -> IO CString
 
 {- | Return Z3_TRUE if the given statistical data is a unsigned integer.
 
        \pre idx < Z3_stats_size(c, s) -}
 foreign import ccall unsafe "Z3_stats_is_uint"
-  z3_stats_is_uint :: (Ptr Z3_context) -> (Ptr Z3_stats) -> CUInt -> IO CInt
+  z3_stats_is_uint :: (Ptr Z3_context) -> (Ptr Z3_stats) -> CUInt -> IO Z3_bool
 
 {- | Return Z3_TRUE if the given statistical data is a double.
 
        \pre idx < Z3_stats_size(c, s) -}
 foreign import ccall unsafe "Z3_stats_is_double"
-  z3_stats_is_double :: (Ptr Z3_context) -> (Ptr Z3_stats) -> CUInt -> IO CInt
+  z3_stats_is_double :: (Ptr Z3_context) -> (Ptr Z3_stats) -> CUInt -> IO Z3_bool
 
 {- | Return the unsigned value of the given statistical data.
 
        \pre idx < Z3_stats_size(c, s) && Z3_stats_is_uint(c, s) -}
 foreign import ccall unsafe "Z3_stats_get_uint_value"
-  z3_stats_get_uint_value :: (Ptr Z3_context) -> (Ptr Z3_stats) -> CUInt -> IO ()
+  z3_stats_get_uint_value :: (Ptr Z3_context) -> (Ptr Z3_stats) -> CUInt -> IO CUInt
 
 {- | Return the double value of the given statistical data.
 
@@ -3674,7 +3679,7 @@ foreign import ccall unsafe "Z3_stats_get_double_value"
 
 {- | Return the estimated allocated memory in bytes. -}
 foreign import ccall unsafe "Z3_get_estimated_alloc_size"
-  z3_get_estimated_alloc_size :: IO CULong
+  z3_get_estimated_alloc_size :: IO CULLong
 
 {- | Return Z3_TRUE if \c can be used as value in the Z3 real algebraic
        number package. -}
@@ -3829,7 +3834,7 @@ foreign import ccall unsafe "Z3_ast_vector_dec_ref"
 
 {- | Return the size of the given AST vector. -}
 foreign import ccall unsafe "Z3_ast_vector_size"
-  z3_ast_vector_size :: (Ptr Z3_context) -> (Ptr Z3_ast_vector) -> IO ()
+  z3_ast_vector_size :: (Ptr Z3_context) -> (Ptr Z3_ast_vector) -> IO CUInt
 
 {- | Return the AST at position \c i in the AST vector \c v.
 
@@ -3857,7 +3862,7 @@ foreign import ccall unsafe "Z3_ast_vector_translate"
 
 {- | Convert AST vector into a string. -}
 foreign import ccall unsafe "Z3_ast_vector_to_string"
-  z3_ast_vector_to_string :: (Ptr Z3_context) -> (Ptr Z3_ast_vector) -> IO (Ptr Z3_string)
+  z3_ast_vector_to_string :: (Ptr Z3_context) -> (Ptr Z3_ast_vector) -> IO CString
 
 {- | Return an empty mapping from AST to AST
 
@@ -3898,7 +3903,7 @@ foreign import ccall unsafe "Z3_ast_map_reset"
 
 {- | Return the size of the given map. -}
 foreign import ccall unsafe "Z3_ast_map_size"
-  z3_ast_map_size :: (Ptr Z3_context) -> (Ptr Z3_ast_map) -> IO ()
+  z3_ast_map_size :: (Ptr Z3_context) -> (Ptr Z3_ast_map) -> IO CUInt
 
 {- | Return the keys stored in the given map. -}
 foreign import ccall unsafe "Z3_ast_map_keys"
@@ -3906,7 +3911,7 @@ foreign import ccall unsafe "Z3_ast_map_keys"
 
 {- | Convert the given map into a string. -}
 foreign import ccall unsafe "Z3_ast_map_to_string"
-  z3_ast_map_to_string :: (Ptr Z3_context) -> (Ptr Z3_ast_map) -> IO (Ptr Z3_string)
+  z3_ast_map_to_string :: (Ptr Z3_context) -> (Ptr Z3_ast_map) -> IO CString
 
 {- | Create a new fixedpoint context.
 
@@ -3998,7 +4003,7 @@ foreign import ccall unsafe "Z3_fixedpoint_get_answer"
 
        Use this method when #Z3_fixedpoint_query returns Z3_L_UNDEF. -}
 foreign import ccall unsafe "Z3_fixedpoint_get_reason_unknown"
-  z3_fixedpoint_get_reason_unknown :: (Ptr Z3_context) -> (Ptr Z3_fixedpoint) -> IO (Ptr Z3_string)
+  z3_fixedpoint_get_reason_unknown :: (Ptr Z3_context) -> (Ptr Z3_fixedpoint) -> IO CString
 
 {- | Update a named rule.
        A rule with the same name must have been previously created. -}
@@ -4011,7 +4016,7 @@ foreign import ccall unsafe "Z3_fixedpoint_update_rule"
        of \c pred with respect to the current exploration state.
        Note: this functionality is PDR specific. -}
 foreign import ccall unsafe "Z3_fixedpoint_get_num_levels"
-  z3_fixedpoint_get_num_levels :: (Ptr Z3_context) -> (Ptr Z3_fixedpoint) -> (Ptr Z3_func_decl) -> IO ()
+  z3_fixedpoint_get_num_levels :: (Ptr Z3_context) -> (Ptr Z3_fixedpoint) -> (Ptr Z3_func_decl) -> IO CUInt
 foreign import ccall unsafe "Z3_fixedpoint_get_cover_delta"
   z3_fixedpoint_get_cover_delta :: (Ptr Z3_context) -> (Ptr Z3_fixedpoint) -> CInt -> (Ptr Z3_func_decl) -> IO (Ptr Z3_ast)
 
@@ -4059,7 +4064,7 @@ foreign import ccall unsafe "Z3_fixedpoint_set_params"
 
 {- | Return a string describing all fixedpoint available parameters. -}
 foreign import ccall unsafe "Z3_fixedpoint_get_help"
-  z3_fixedpoint_get_help :: (Ptr Z3_context) -> (Ptr Z3_fixedpoint) -> IO (Ptr Z3_string)
+  z3_fixedpoint_get_help :: (Ptr Z3_context) -> (Ptr Z3_fixedpoint) -> IO CString
 
 {- | Return the parameter description set for the given fixedpoint object. -}
 foreign import ccall unsafe "Z3_fixedpoint_get_param_descrs"
@@ -4071,7 +4076,7 @@ foreign import ccall unsafe "Z3_fixedpoint_get_param_descrs"
        \param num_queries - number of additional queries to print.
        \param queries - additional queries. -}
 foreign import ccall unsafe "Z3_fixedpoint_to_string"
-  z3_fixedpoint_to_string :: (Ptr Z3_context) -> (Ptr Z3_fixedpoint) -> CUInt -> Ptr (Ptr Z3_ast) -> IO (Ptr Z3_string)
+  z3_fixedpoint_to_string :: (Ptr Z3_context) -> (Ptr Z3_fixedpoint) -> CUInt -> Ptr (Ptr Z3_ast) -> IO CString
 
 {- | Parse an SMT-LIB2 string with fixedpoint rules.
        Add the rules to the current fixedpoint context.
@@ -4081,7 +4086,7 @@ foreign import ccall unsafe "Z3_fixedpoint_to_string"
        \param f - fixedpoint context.
        \param s - string containing SMT2 specification. -}
 foreign import ccall unsafe "Z3_fixedpoint_from_string"
-  z3_fixedpoint_from_string :: (Ptr Z3_context) -> (Ptr Z3_fixedpoint) -> (Ptr Z3_string) -> IO (Ptr Z3_ast_vector)
+  z3_fixedpoint_from_string :: (Ptr Z3_context) -> (Ptr Z3_fixedpoint) -> CString -> IO (Ptr Z3_ast_vector)
 
 {- | Parse an SMT-LIB2 file with fixedpoint rules.
        Add the rules to the current fixedpoint context.
@@ -4091,7 +4096,7 @@ foreign import ccall unsafe "Z3_fixedpoint_from_string"
        \param f - fixedpoint context.
        \param s - string containing SMT2 specification. -}
 foreign import ccall unsafe "Z3_fixedpoint_from_file"
-  z3_fixedpoint_from_file :: (Ptr Z3_context) -> (Ptr Z3_fixedpoint) -> (Ptr Z3_string) -> IO (Ptr Z3_ast_vector)
+  z3_fixedpoint_from_file :: (Ptr Z3_context) -> (Ptr Z3_fixedpoint) -> CString -> IO (Ptr Z3_ast_vector)
 
 {- | Create a backtracking point.
 
@@ -4360,7 +4365,7 @@ foreign import ccall unsafe "Z3_mk_fpa_numeral_int_uint"
 
         \sa Z3_mk_numeral -}
 foreign import ccall unsafe "Z3_mk_fpa_numeral_int64_uint64"
-  z3_mk_fpa_numeral_int64_uint64 :: (Ptr Z3_context) -> CInt -> CLong -> CULong -> (Ptr Z3_sort) -> IO (Ptr Z3_ast)
+  z3_mk_fpa_numeral_int64_uint64 :: (Ptr Z3_context) -> CInt -> CLLong -> CULLong -> (Ptr Z3_sort) -> IO (Ptr Z3_ast)
 
 {- | Floating-point absolute value
 
@@ -4719,14 +4724,14 @@ foreign import ccall unsafe "Z3_mk_fpa_to_real"
         \param c logical context
         \param s FloatingPoint sort -}
 foreign import ccall unsafe "Z3_fpa_get_ebits"
-  z3_fpa_get_ebits :: (Ptr Z3_context) -> (Ptr Z3_sort) -> IO ()
+  z3_fpa_get_ebits :: (Ptr Z3_context) -> (Ptr Z3_sort) -> IO CUInt
 
 {- | Retrieves the number of bits reserved for the significand in a FloatingPoint sort.
 
         \param c logical context
         \param s FloatingPoint sort -}
 foreign import ccall unsafe "Z3_fpa_get_sbits"
-  z3_fpa_get_sbits :: (Ptr Z3_context) -> (Ptr Z3_sort) -> IO ()
+  z3_fpa_get_sbits :: (Ptr Z3_context) -> (Ptr Z3_sort) -> IO CUInt
 
 {- | Retrieves the sign of a floating-point literal.
 
@@ -4747,7 +4752,7 @@ foreign import ccall unsafe "Z3_fpa_get_numeral_sign"
         Remarks: The significand s is always 0.0 <= s < 2.0; the resulting string is long
         enough to represent the real significand precisely. -}
 foreign import ccall unsafe "Z3_fpa_get_numeral_significand_string"
-  z3_fpa_get_numeral_significand_string :: (Ptr Z3_context) -> (Ptr Z3_ast) -> IO (Ptr Z3_string)
+  z3_fpa_get_numeral_significand_string :: (Ptr Z3_context) -> (Ptr Z3_ast) -> IO CString
 
 {- | Return the significand value of a floating-point numeral as a uint64.
 
@@ -4759,7 +4764,7 @@ foreign import ccall unsafe "Z3_fpa_get_numeral_significand_string"
         hidden bit or normalization. Sets the Z3_INVALID_ARG error code if the
         significand does not fit into a uint64. -}
 foreign import ccall unsafe "Z3_fpa_get_numeral_significand_uint64"
-  z3_fpa_get_numeral_significand_uint64 :: (Ptr Z3_context) -> (Ptr Z3_ast) -> Ptr CULong -> IO CInt
+  z3_fpa_get_numeral_significand_uint64 :: (Ptr Z3_context) -> (Ptr Z3_ast) -> Ptr CULLong -> IO CInt
 
 {- | Return the exponent value of a floating-point numeral as a string
 
@@ -4768,7 +4773,7 @@ foreign import ccall unsafe "Z3_fpa_get_numeral_significand_uint64"
 
         Remarks: This function extracts the exponent in `t`, without normalization. -}
 foreign import ccall unsafe "Z3_fpa_get_numeral_exponent_string"
-  z3_fpa_get_numeral_exponent_string :: (Ptr Z3_context) -> (Ptr Z3_ast) -> IO (Ptr Z3_string)
+  z3_fpa_get_numeral_exponent_string :: (Ptr Z3_context) -> (Ptr Z3_ast) -> IO CString
 
 {- | Return the exponent value of a floating-point numeral as a signed 64-bit integer
 
@@ -4778,7 +4783,7 @@ foreign import ccall unsafe "Z3_fpa_get_numeral_exponent_string"
 
         Remarks: This function extracts the exponent in `t`, without normalization. -}
 foreign import ccall unsafe "Z3_fpa_get_numeral_exponent_int64"
-  z3_fpa_get_numeral_exponent_int64 :: (Ptr Z3_context) -> (Ptr Z3_ast) -> Ptr CLong -> IO CInt
+  z3_fpa_get_numeral_exponent_int64 :: (Ptr Z3_context) -> (Ptr Z3_ast) -> Ptr CLLong -> IO CInt
 
 {- | Conversion of a floating-point term into a bit-vector term in IEEE 754-2008 format.
 
@@ -4834,7 +4839,7 @@ foreign import ccall unsafe "Z3_get_interpolant"
 foreign import ccall unsafe "Z3_compute_interpolant"
   z3_compute_interpolant :: (Ptr Z3_context) -> (Ptr Z3_ast) -> (Ptr Z3_params) -> Ptr (Ptr Z3_ast_vector) -> Ptr (Ptr Z3_model) -> IO Z3_lbool
 foreign import ccall unsafe "Z3_interpolation_profile"
-  z3_interpolation_profile :: (Ptr Z3_context) -> IO (Ptr Z3_string)
+  z3_interpolation_profile :: (Ptr Z3_context) -> IO CString
 
 {- | Read an interpolation problem from file.
 
@@ -4868,11 +4873,11 @@ foreign import ccall unsafe "Z3_interpolation_profile"
        where each value is represented using the common symbols between
        the formulas in the subtree and the remainder of the formulas. -}
 foreign import ccall unsafe "Z3_read_interpolation_problem"
-  z3_read_interpolation_problem :: (Ptr Z3_context) -> Ptr CUInt -> Ptr (Ptr (Ptr Z3_ast)) -> Ptr (Ptr CUInt) -> (Ptr Z3_string) -> (Ptr Z3_string_ptr) -> Ptr CUInt -> Ptr (Ptr (Ptr Z3_ast)) -> IO CInt
+  z3_read_interpolation_problem :: (Ptr Z3_context) -> Ptr CUInt -> Ptr (Ptr (Ptr Z3_ast)) -> Ptr (Ptr CUInt) -> CString -> (Ptr Z3_string_ptr) -> Ptr CUInt -> Ptr (Ptr (Ptr Z3_ast)) -> IO CInt
 foreign import ccall unsafe "Z3_check_interpolant"
   z3_check_interpolant :: (Ptr Z3_context) -> CUInt -> Ptr (Ptr Z3_ast) -> Ptr CUInt -> Ptr (Ptr Z3_ast) -> (Ptr Z3_string_ptr) -> CUInt -> Ptr (Ptr Z3_ast) -> IO CInt
 foreign import ccall unsafe "Z3_write_interpolation_problem"
-  z3_write_interpolation_problem :: (Ptr Z3_context) -> CUInt -> Ptr (Ptr Z3_ast) -> Ptr CUInt -> (Ptr Z3_string) -> CUInt -> Ptr (Ptr Z3_ast) -> IO ()
+  z3_write_interpolation_problem :: (Ptr Z3_context) -> CUInt -> Ptr (Ptr Z3_ast) -> Ptr CUInt -> CString -> CUInt -> Ptr (Ptr Z3_ast) -> IO ()
 
 {- | Create a new optimize context.
 
@@ -4900,21 +4905,21 @@ foreign import ccall unsafe "Z3_optimize_assert"
        \param weight - a positive weight, penalty for violating soft constraint
        \param id - optional identifier to group soft constraints -}
 foreign import ccall unsafe "Z3_optimize_assert_soft"
-  z3_optimize_assert_soft :: (Ptr Z3_context) -> (Ptr Z3_optimize) -> (Ptr Z3_ast) -> (Ptr Z3_string) -> (Ptr Z3_symbol) -> IO ()
+  z3_optimize_assert_soft :: (Ptr Z3_context) -> (Ptr Z3_optimize) -> (Ptr Z3_ast) -> CString -> (Ptr Z3_symbol) -> IO CUInt
 
 {- | Add a maximization constraint.
        \param c - context
        \param o - optimization context
        \param a - arithmetical term -}
 foreign import ccall unsafe "Z3_optimize_maximize"
-  z3_optimize_maximize :: (Ptr Z3_context) -> (Ptr Z3_optimize) -> (Ptr Z3_ast) -> IO ()
+  z3_optimize_maximize :: (Ptr Z3_context) -> (Ptr Z3_optimize) -> (Ptr Z3_ast) -> IO CUInt
 
 {- | Add a minimization constraint.
        \param c - context
        \param o - optimization context
        \param a - arithmetical term -}
 foreign import ccall unsafe "Z3_optimize_minimize"
-  z3_optimize_minimize :: (Ptr Z3_context) -> (Ptr Z3_optimize) -> (Ptr Z3_ast) -> IO ()
+  z3_optimize_minimize :: (Ptr Z3_context) -> (Ptr Z3_optimize) -> (Ptr Z3_ast) -> IO CUInt
 
 {- | Create a backtracking point.
 
@@ -4943,7 +4948,7 @@ foreign import ccall unsafe "Z3_optimize_check"
 
        Use this method when #Z3_optimize_check returns Z3_L_UNDEF. -}
 foreign import ccall unsafe "Z3_optimize_get_reason_unknown"
-  z3_optimize_get_reason_unknown :: (Ptr Z3_context) -> (Ptr Z3_optimize) -> IO (Ptr Z3_string)
+  z3_optimize_get_reason_unknown :: (Ptr Z3_context) -> (Ptr Z3_optimize) -> IO CString
 
 {- | Retrieve the model for the last #Z3_optimize_check
 
@@ -4988,7 +4993,7 @@ foreign import ccall unsafe "Z3_optimize_get_upper"
        \param c - context.
        \param o - optimization context. -}
 foreign import ccall unsafe "Z3_optimize_to_string"
-  z3_optimize_to_string :: (Ptr Z3_context) -> (Ptr Z3_optimize) -> IO (Ptr Z3_string)
+  z3_optimize_to_string :: (Ptr Z3_context) -> (Ptr Z3_optimize) -> IO CString
 
 {- | Parse an SMT-LIB2 string with assertions,
        soft constraints and optimization objectives.
@@ -4998,7 +5003,7 @@ foreign import ccall unsafe "Z3_optimize_to_string"
        \param o - optimize context.
        \param s - string containing SMT2 specification. -}
 foreign import ccall unsafe "Z3_optimize_from_string"
-  z3_optimize_from_string :: (Ptr Z3_context) -> (Ptr Z3_optimize) -> (Ptr Z3_string) -> IO ()
+  z3_optimize_from_string :: (Ptr Z3_context) -> (Ptr Z3_optimize) -> CString -> IO ()
 
 {- | Parse an SMT-LIB2 file with assertions,
        soft constraints and optimization objectives.
@@ -5008,11 +5013,11 @@ foreign import ccall unsafe "Z3_optimize_from_string"
        \param o - optimize context.
        \param s - string containing SMT2 specification. -}
 foreign import ccall unsafe "Z3_optimize_from_file"
-  z3_optimize_from_file :: (Ptr Z3_context) -> (Ptr Z3_optimize) -> (Ptr Z3_string) -> IO ()
+  z3_optimize_from_file :: (Ptr Z3_context) -> (Ptr Z3_optimize) -> CString -> IO ()
 
 {- | Return a string containing a description of parameters accepted by optimize. -}
 foreign import ccall unsafe "Z3_optimize_get_help"
-  z3_optimize_get_help :: (Ptr Z3_context) -> (Ptr Z3_optimize) -> IO (Ptr Z3_string)
+  z3_optimize_get_help :: (Ptr Z3_context) -> (Ptr Z3_optimize) -> IO CString
 
 {- | Retrieve statistics information from the last call to #Z3_optimize_check -}
 foreign import ccall unsafe "Z3_optimize_get_statistics"
@@ -5047,7 +5052,7 @@ foreign import ccall unsafe "Z3_rcf_del"
 
 {- | Return a RCF rational using the given string. -}
 foreign import ccall unsafe "Z3_rcf_mk_rational"
-  z3_rcf_mk_rational :: (Ptr Z3_context) -> (Ptr Z3_string) -> IO (Ptr Z3_rcf_num)
+  z3_rcf_mk_rational :: (Ptr Z3_context) -> CString -> IO (Ptr Z3_rcf_num)
 
 {- | Return a RCF small integer. -}
 foreign import ccall unsafe "Z3_rcf_mk_small_int"
@@ -5071,7 +5076,7 @@ foreign import ccall unsafe "Z3_rcf_mk_infinitesimal"
 
        \pre The input polynomial is not the zero polynomial. -}
 foreign import ccall unsafe "Z3_rcf_mk_roots"
-  z3_rcf_mk_roots :: (Ptr Z3_context) -> CUInt -> Ptr (Ptr Z3_rcf_num) -> Ptr (Ptr Z3_rcf_num) -> IO ()
+  z3_rcf_mk_roots :: (Ptr Z3_context) -> CUInt -> Ptr (Ptr Z3_rcf_num) -> Ptr (Ptr Z3_rcf_num) -> IO CUInt
 
 {- | Return the value a + b. -}
 foreign import ccall unsafe "Z3_rcf_add"
@@ -5127,11 +5132,11 @@ foreign import ccall unsafe "Z3_rcf_neq"
 
 {- | Convert the RCF numeral into a string. -}
 foreign import ccall unsafe "Z3_rcf_num_to_string"
-  z3_rcf_num_to_string :: (Ptr Z3_context) -> (Ptr Z3_rcf_num) -> CInt -> CInt -> IO (Ptr Z3_string)
+  z3_rcf_num_to_string :: (Ptr Z3_context) -> (Ptr Z3_rcf_num) -> CInt -> CInt -> IO CString
 
 {- | Convert the RCF numeral into a string in decimal notation. -}
 foreign import ccall unsafe "Z3_rcf_num_to_decimal_string"
-  z3_rcf_num_to_decimal_string :: (Ptr Z3_context) -> (Ptr Z3_rcf_num) -> CUInt -> IO (Ptr Z3_string)
+  z3_rcf_num_to_decimal_string :: (Ptr Z3_context) -> (Ptr Z3_rcf_num) -> CUInt -> IO CString
 
 {- | Extract the "numerator" and "denominator" of the given RCF numeral.
        We have that a = n/d, moreover n and d are not represented using rational functions. -}

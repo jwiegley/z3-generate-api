@@ -8,6 +8,7 @@
 module Z3.Base.C.Algebraic where
 import Foreign.Ptr
 import Foreign.C.Types
+import Foreign.C.String
 import Z3.Base.C.Api
 #ccall Z3_algebraic_is_value , <Z3_context> -> <Z3_ast> -> IO CInt
 #ccall Z3_algebraic_is_pos , <Z3_context> -> <Z3_ast> -> IO CInt

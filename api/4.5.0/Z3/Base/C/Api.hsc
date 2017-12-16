@@ -7,6 +7,7 @@
 module Z3.Base.C.Api where
 import Foreign.Ptr
 import Foreign.C.Types
+import Foreign.C.String
 data Z3_app
 type C'Z3_app = Ptr Z3_app
 data Z3_param_descrs
@@ -65,8 +66,12 @@ data Z3_solver
 type C'Z3_solver = Ptr Z3_solver
 data Z3_constructor
 type C'Z3_constructor = Ptr Z3_constructor
-{- typedef int Z3_bool; -}
-#synonym_t Z3_bool , CInt
+{- typedef enum {
+            Z3_FALSE = 0, Z3_TRUE
+        } Z3_bool; -}
+#integral_t Z3_bool
+#num Z3_FALSE
+#num Z3_TRUE
 {- typedef enum {
             Z3_L_FALSE = -1, Z3_L_UNDEF, Z3_L_TRUE
         } Z3_lbool; -}
@@ -678,7 +683,7 @@ type C'Z3_constructor = Ptr Z3_constructor
 #num Z3_GOAL_UNDER_OVER
 #ccall Z3_global_param_set , <Z3_string> -> <Z3_string> -> IO ()
 #ccall Z3_global_param_reset_all , IO ()
-#ccall Z3_global_param_get , <Z3_string> -> <Z3_string_ptr> -> IO CInt
+#ccall Z3_global_param_get , <Z3_string> -> <Z3_string_ptr> -> IO <Z3_bool>
 #ccall Z3_mk_config , IO <Z3_config>
 #ccall Z3_del_config , <Z3_config> -> IO ()
 #ccall Z3_set_param_value , <Z3_config> -> <Z3_string> -> <Z3_string> -> IO ()
@@ -692,7 +697,7 @@ type C'Z3_constructor = Ptr Z3_constructor
 #ccall Z3_mk_params , <Z3_context> -> IO <Z3_params>
 #ccall Z3_params_inc_ref , <Z3_context> -> <Z3_params> -> IO ()
 #ccall Z3_params_dec_ref , <Z3_context> -> <Z3_params> -> IO ()
-#ccall Z3_params_set_bool , <Z3_context> -> <Z3_params> -> <Z3_symbol> -> CInt -> IO ()
+#ccall Z3_params_set_bool , <Z3_context> -> <Z3_params> -> <Z3_symbol> -> <Z3_bool> -> IO ()
 #ccall Z3_params_set_uint , <Z3_context> -> <Z3_params> -> <Z3_symbol> -> CUInt -> IO ()
 #ccall Z3_params_set_double , <Z3_context> -> <Z3_params> -> <Z3_symbol> -> CDouble -> IO ()
 #ccall Z3_params_set_symbol , <Z3_context> -> <Z3_params> -> <Z3_symbol> -> <Z3_symbol> -> IO ()
@@ -701,7 +706,7 @@ type C'Z3_constructor = Ptr Z3_constructor
 #ccall Z3_param_descrs_inc_ref , <Z3_context> -> <Z3_param_descrs> -> IO ()
 #ccall Z3_param_descrs_dec_ref , <Z3_context> -> <Z3_param_descrs> -> IO ()
 #ccall Z3_param_descrs_get_kind , <Z3_context> -> <Z3_param_descrs> -> <Z3_symbol> -> IO <Z3_param_kind>
-#ccall Z3_param_descrs_size , <Z3_context> -> <Z3_param_descrs> -> IO ()
+#ccall Z3_param_descrs_size , <Z3_context> -> <Z3_param_descrs> -> IO CUInt
 #ccall Z3_param_descrs_get_name , <Z3_context> -> <Z3_param_descrs> -> CUInt -> IO <Z3_symbol>
 #ccall Z3_param_descrs_get_documentation , <Z3_context> -> <Z3_param_descrs> -> <Z3_symbol> -> IO <Z3_string>
 #ccall Z3_param_descrs_to_string , <Z3_context> -> <Z3_param_descrs> -> IO <Z3_string>
@@ -712,7 +717,7 @@ type C'Z3_constructor = Ptr Z3_constructor
 #ccall Z3_mk_int_sort , <Z3_context> -> IO <Z3_sort>
 #ccall Z3_mk_real_sort , <Z3_context> -> IO <Z3_sort>
 #ccall Z3_mk_bv_sort , <Z3_context> -> CUInt -> IO <Z3_sort>
-#ccall Z3_mk_finite_domain_sort , <Z3_context> -> <Z3_symbol> -> CULong -> IO <Z3_sort>
+#ccall Z3_mk_finite_domain_sort , <Z3_context> -> <Z3_symbol> -> CULLong -> IO <Z3_sort>
 #ccall Z3_mk_array_sort , <Z3_context> -> <Z3_sort> -> <Z3_sort> -> IO <Z3_sort>
 #ccall Z3_mk_tuple_sort , <Z3_context> -> <Z3_symbol> -> CUInt -> Ptr <Z3_symbol> -> Ptr <Z3_sort> -> Ptr <Z3_func_decl> -> Ptr <Z3_func_decl> -> IO <Z3_sort>
 #ccall Z3_mk_enumeration_sort , <Z3_context> -> <Z3_symbol> -> CUInt -> Ptr <Z3_symbol> -> Ptr <Z3_func_decl> -> Ptr <Z3_func_decl> -> IO <Z3_sort>
@@ -794,14 +799,14 @@ type C'Z3_constructor = Ptr Z3_constructor
 #ccall Z3_mk_ext_rotate_left , <Z3_context> -> <Z3_ast> -> <Z3_ast> -> IO <Z3_ast>
 #ccall Z3_mk_ext_rotate_right , <Z3_context> -> <Z3_ast> -> <Z3_ast> -> IO <Z3_ast>
 #ccall Z3_mk_int2bv , <Z3_context> -> CUInt -> <Z3_ast> -> IO <Z3_ast>
-#ccall Z3_mk_bv2int , <Z3_context> -> <Z3_ast> -> CInt -> IO <Z3_ast>
-#ccall Z3_mk_bvadd_no_overflow , <Z3_context> -> <Z3_ast> -> <Z3_ast> -> CInt -> IO <Z3_ast>
+#ccall Z3_mk_bv2int , <Z3_context> -> <Z3_ast> -> <Z3_bool> -> IO <Z3_ast>
+#ccall Z3_mk_bvadd_no_overflow , <Z3_context> -> <Z3_ast> -> <Z3_ast> -> <Z3_bool> -> IO <Z3_ast>
 #ccall Z3_mk_bvadd_no_underflow , <Z3_context> -> <Z3_ast> -> <Z3_ast> -> IO <Z3_ast>
 #ccall Z3_mk_bvsub_no_overflow , <Z3_context> -> <Z3_ast> -> <Z3_ast> -> IO <Z3_ast>
-#ccall Z3_mk_bvsub_no_underflow , <Z3_context> -> <Z3_ast> -> <Z3_ast> -> CInt -> IO <Z3_ast>
+#ccall Z3_mk_bvsub_no_underflow , <Z3_context> -> <Z3_ast> -> <Z3_ast> -> <Z3_bool> -> IO <Z3_ast>
 #ccall Z3_mk_bvsdiv_no_overflow , <Z3_context> -> <Z3_ast> -> <Z3_ast> -> IO <Z3_ast>
 #ccall Z3_mk_bvneg_no_overflow , <Z3_context> -> <Z3_ast> -> IO <Z3_ast>
-#ccall Z3_mk_bvmul_no_overflow , <Z3_context> -> <Z3_ast> -> <Z3_ast> -> CInt -> IO <Z3_ast>
+#ccall Z3_mk_bvmul_no_overflow , <Z3_context> -> <Z3_ast> -> <Z3_ast> -> <Z3_bool> -> IO <Z3_ast>
 #ccall Z3_mk_bvmul_no_underflow , <Z3_context> -> <Z3_ast> -> <Z3_ast> -> IO <Z3_ast>
 #ccall Z3_mk_select , <Z3_context> -> <Z3_ast> -> <Z3_ast> -> IO <Z3_ast>
 #ccall Z3_mk_store , <Z3_context> -> <Z3_ast> -> <Z3_ast> -> <Z3_ast> -> IO <Z3_ast>
@@ -824,16 +829,16 @@ type C'Z3_constructor = Ptr Z3_constructor
 #ccall Z3_mk_real , <Z3_context> -> CInt -> CInt -> IO <Z3_ast>
 #ccall Z3_mk_int , <Z3_context> -> CInt -> <Z3_sort> -> IO <Z3_ast>
 #ccall Z3_mk_unsigned_int , <Z3_context> -> CUInt -> <Z3_sort> -> IO <Z3_ast>
-#ccall Z3_mk_int64 , <Z3_context> -> CLong -> <Z3_sort> -> IO <Z3_ast>
-#ccall Z3_mk_unsigned_int64 , <Z3_context> -> CULong -> <Z3_sort> -> IO <Z3_ast>
+#ccall Z3_mk_int64 , <Z3_context> -> CLLong -> <Z3_sort> -> IO <Z3_ast>
+#ccall Z3_mk_unsigned_int64 , <Z3_context> -> CULLong -> <Z3_sort> -> IO <Z3_ast>
 #ccall Z3_mk_seq_sort , <Z3_context> -> <Z3_sort> -> IO <Z3_sort>
-#ccall Z3_is_seq_sort , <Z3_context> -> <Z3_sort> -> IO CInt
+#ccall Z3_is_seq_sort , <Z3_context> -> <Z3_sort> -> IO <Z3_bool>
 #ccall Z3_mk_re_sort , <Z3_context> -> <Z3_sort> -> IO <Z3_sort>
-#ccall Z3_is_re_sort , <Z3_context> -> <Z3_sort> -> IO CInt
+#ccall Z3_is_re_sort , <Z3_context> -> <Z3_sort> -> IO <Z3_bool>
 #ccall Z3_mk_string_sort , <Z3_context> -> IO <Z3_sort>
-#ccall Z3_is_string_sort , <Z3_context> -> <Z3_sort> -> IO CInt
+#ccall Z3_is_string_sort , <Z3_context> -> <Z3_sort> -> IO <Z3_bool>
 #ccall Z3_mk_string , <Z3_context> -> <Z3_string> -> IO <Z3_ast>
-#ccall Z3_is_string , <Z3_context> -> <Z3_ast> -> IO CInt
+#ccall Z3_is_string , <Z3_context> -> <Z3_ast> -> IO <Z3_bool>
 #ccall Z3_get_string , <Z3_context> -> <Z3_ast> -> IO <Z3_string>
 #ccall Z3_mk_seq_empty , <Z3_context> -> <Z3_sort> -> IO <Z3_ast>
 #ccall Z3_mk_seq_unit , <Z3_context> -> <Z3_ast> -> IO <Z3_ast>
@@ -857,47 +862,47 @@ type C'Z3_constructor = Ptr Z3_constructor
 #ccall Z3_mk_bound , <Z3_context> -> CUInt -> <Z3_sort> -> IO <Z3_ast>
 #ccall Z3_mk_forall , <Z3_context> -> CUInt -> CUInt -> Ptr <Z3_pattern> -> CUInt -> Ptr <Z3_sort> -> Ptr <Z3_symbol> -> <Z3_ast> -> IO <Z3_ast>
 #ccall Z3_mk_exists , <Z3_context> -> CUInt -> CUInt -> Ptr <Z3_pattern> -> CUInt -> Ptr <Z3_sort> -> Ptr <Z3_symbol> -> <Z3_ast> -> IO <Z3_ast>
-#ccall Z3_mk_quantifier , <Z3_context> -> CInt -> CUInt -> CUInt -> Ptr <Z3_pattern> -> CUInt -> Ptr <Z3_sort> -> Ptr <Z3_symbol> -> <Z3_ast> -> IO <Z3_ast>
-#ccall Z3_mk_quantifier_ex , <Z3_context> -> CInt -> CUInt -> <Z3_symbol> -> <Z3_symbol> -> CUInt -> Ptr <Z3_pattern> -> CUInt -> Ptr <Z3_ast> -> CUInt -> Ptr <Z3_sort> -> Ptr <Z3_symbol> -> <Z3_ast> -> IO <Z3_ast>
+#ccall Z3_mk_quantifier , <Z3_context> -> <Z3_bool> -> CUInt -> CUInt -> Ptr <Z3_pattern> -> CUInt -> Ptr <Z3_sort> -> Ptr <Z3_symbol> -> <Z3_ast> -> IO <Z3_ast>
+#ccall Z3_mk_quantifier_ex , <Z3_context> -> <Z3_bool> -> CUInt -> <Z3_symbol> -> <Z3_symbol> -> CUInt -> Ptr <Z3_pattern> -> CUInt -> Ptr <Z3_ast> -> CUInt -> Ptr <Z3_sort> -> Ptr <Z3_symbol> -> <Z3_ast> -> IO <Z3_ast>
 #ccall Z3_mk_forall_const , <Z3_context> -> CUInt -> CUInt -> Ptr <Z3_app> -> CUInt -> Ptr <Z3_pattern> -> <Z3_ast> -> IO <Z3_ast>
 #ccall Z3_mk_exists_const , <Z3_context> -> CUInt -> CUInt -> Ptr <Z3_app> -> CUInt -> Ptr <Z3_pattern> -> <Z3_ast> -> IO <Z3_ast>
-#ccall Z3_mk_quantifier_const , <Z3_context> -> CInt -> CUInt -> CUInt -> Ptr <Z3_app> -> CUInt -> Ptr <Z3_pattern> -> <Z3_ast> -> IO <Z3_ast>
-#ccall Z3_mk_quantifier_const_ex , <Z3_context> -> CInt -> CUInt -> <Z3_symbol> -> <Z3_symbol> -> CUInt -> Ptr <Z3_app> -> CUInt -> Ptr <Z3_pattern> -> CUInt -> Ptr <Z3_ast> -> <Z3_ast> -> IO <Z3_ast>
+#ccall Z3_mk_quantifier_const , <Z3_context> -> <Z3_bool> -> CUInt -> CUInt -> Ptr <Z3_app> -> CUInt -> Ptr <Z3_pattern> -> <Z3_ast> -> IO <Z3_ast>
+#ccall Z3_mk_quantifier_const_ex , <Z3_context> -> <Z3_bool> -> CUInt -> <Z3_symbol> -> <Z3_symbol> -> CUInt -> Ptr <Z3_app> -> CUInt -> Ptr <Z3_pattern> -> CUInt -> Ptr <Z3_ast> -> <Z3_ast> -> IO <Z3_ast>
 #ccall Z3_get_symbol_kind , <Z3_context> -> <Z3_symbol> -> IO <Z3_symbol_kind>
 #ccall Z3_get_symbol_int , <Z3_context> -> <Z3_symbol> -> IO CInt
 #ccall Z3_get_symbol_string , <Z3_context> -> <Z3_symbol> -> IO <Z3_string>
 #ccall Z3_get_sort_name , <Z3_context> -> <Z3_sort> -> IO <Z3_symbol>
-#ccall Z3_get_sort_id , <Z3_context> -> <Z3_sort> -> IO ()
+#ccall Z3_get_sort_id , <Z3_context> -> <Z3_sort> -> IO CUInt
 #ccall Z3_sort_to_ast , <Z3_context> -> <Z3_sort> -> IO <Z3_ast>
-#ccall Z3_is_eq_sort , <Z3_context> -> <Z3_sort> -> <Z3_sort> -> IO CInt
+#ccall Z3_is_eq_sort , <Z3_context> -> <Z3_sort> -> <Z3_sort> -> IO <Z3_bool>
 #ccall Z3_get_sort_kind , <Z3_context> -> <Z3_sort> -> IO <Z3_sort_kind>
-#ccall Z3_get_bv_sort_size , <Z3_context> -> <Z3_sort> -> IO ()
-#ccall Z3_get_finite_domain_sort_size , <Z3_context> -> <Z3_sort> -> Ptr CULong -> IO CInt
+#ccall Z3_get_bv_sort_size , <Z3_context> -> <Z3_sort> -> IO CUInt
+#ccall Z3_get_finite_domain_sort_size , <Z3_context> -> <Z3_sort> -> Ptr CULLong -> IO <Z3_bool>
 #ccall Z3_get_array_sort_domain , <Z3_context> -> <Z3_sort> -> IO <Z3_sort>
 #ccall Z3_get_array_sort_range , <Z3_context> -> <Z3_sort> -> IO <Z3_sort>
 #ccall Z3_get_tuple_sort_mk_decl , <Z3_context> -> <Z3_sort> -> IO <Z3_func_decl>
-#ccall Z3_get_tuple_sort_num_fields , <Z3_context> -> <Z3_sort> -> IO ()
+#ccall Z3_get_tuple_sort_num_fields , <Z3_context> -> <Z3_sort> -> IO CUInt
 #ccall Z3_get_tuple_sort_field_decl , <Z3_context> -> <Z3_sort> -> CUInt -> IO <Z3_func_decl>
-#ccall Z3_get_datatype_sort_num_constructors , <Z3_context> -> <Z3_sort> -> IO ()
+#ccall Z3_get_datatype_sort_num_constructors , <Z3_context> -> <Z3_sort> -> IO CUInt
 #ccall Z3_get_datatype_sort_constructor , <Z3_context> -> <Z3_sort> -> CUInt -> IO <Z3_func_decl>
 #ccall Z3_get_datatype_sort_recognizer , <Z3_context> -> <Z3_sort> -> CUInt -> IO <Z3_func_decl>
 #ccall Z3_get_datatype_sort_constructor_accessor , <Z3_context> -> <Z3_sort> -> CUInt -> CUInt -> IO <Z3_func_decl>
 #ccall Z3_datatype_update_field , <Z3_context> -> <Z3_func_decl> -> <Z3_ast> -> <Z3_ast> -> IO <Z3_ast>
-#ccall Z3_get_relation_arity , <Z3_context> -> <Z3_sort> -> IO ()
+#ccall Z3_get_relation_arity , <Z3_context> -> <Z3_sort> -> IO CUInt
 #ccall Z3_get_relation_column , <Z3_context> -> <Z3_sort> -> CUInt -> IO <Z3_sort>
 #ccall Z3_mk_atmost , <Z3_context> -> CUInt -> Ptr <Z3_ast> -> CUInt -> IO <Z3_ast>
 #ccall Z3_mk_pble , <Z3_context> -> CUInt -> Ptr <Z3_ast> -> Ptr CInt -> CInt -> IO <Z3_ast>
 #ccall Z3_mk_pbeq , <Z3_context> -> CUInt -> Ptr <Z3_ast> -> Ptr CInt -> CInt -> IO <Z3_ast>
 #ccall Z3_func_decl_to_ast , <Z3_context> -> <Z3_func_decl> -> IO <Z3_ast>
-#ccall Z3_is_eq_func_decl , <Z3_context> -> <Z3_func_decl> -> <Z3_func_decl> -> IO CInt
-#ccall Z3_get_func_decl_id , <Z3_context> -> <Z3_func_decl> -> IO ()
+#ccall Z3_is_eq_func_decl , <Z3_context> -> <Z3_func_decl> -> <Z3_func_decl> -> IO <Z3_bool>
+#ccall Z3_get_func_decl_id , <Z3_context> -> <Z3_func_decl> -> IO CUInt
 #ccall Z3_get_decl_name , <Z3_context> -> <Z3_func_decl> -> IO <Z3_symbol>
 #ccall Z3_get_decl_kind , <Z3_context> -> <Z3_func_decl> -> IO <Z3_decl_kind>
-#ccall Z3_get_domain_size , <Z3_context> -> <Z3_func_decl> -> IO ()
-#ccall Z3_get_arity , <Z3_context> -> <Z3_func_decl> -> IO ()
+#ccall Z3_get_domain_size , <Z3_context> -> <Z3_func_decl> -> IO CUInt
+#ccall Z3_get_arity , <Z3_context> -> <Z3_func_decl> -> IO CUInt
 #ccall Z3_get_domain , <Z3_context> -> <Z3_func_decl> -> CUInt -> IO <Z3_sort>
 #ccall Z3_get_range , <Z3_context> -> <Z3_func_decl> -> IO <Z3_sort>
-#ccall Z3_get_decl_num_parameters , <Z3_context> -> <Z3_func_decl> -> IO ()
+#ccall Z3_get_decl_num_parameters , <Z3_context> -> <Z3_func_decl> -> IO CUInt
 #ccall Z3_get_decl_parameter_kind , <Z3_context> -> <Z3_func_decl> -> CUInt -> IO <Z3_parameter_kind>
 #ccall Z3_get_decl_int_parameter , <Z3_context> -> <Z3_func_decl> -> CUInt -> IO CInt
 #ccall Z3_get_decl_double_parameter , <Z3_context> -> <Z3_func_decl> -> CUInt -> IO CDouble
@@ -908,43 +913,43 @@ type C'Z3_constructor = Ptr Z3_constructor
 #ccall Z3_get_decl_rational_parameter , <Z3_context> -> <Z3_func_decl> -> CUInt -> IO <Z3_string>
 #ccall Z3_app_to_ast , <Z3_context> -> <Z3_app> -> IO <Z3_ast>
 #ccall Z3_get_app_decl , <Z3_context> -> <Z3_app> -> IO <Z3_func_decl>
-#ccall Z3_get_app_num_args , <Z3_context> -> <Z3_app> -> IO ()
+#ccall Z3_get_app_num_args , <Z3_context> -> <Z3_app> -> IO CUInt
 #ccall Z3_get_app_arg , <Z3_context> -> <Z3_app> -> CUInt -> IO <Z3_ast>
-#ccall Z3_is_eq_ast , <Z3_context> -> <Z3_ast> -> <Z3_ast> -> IO CInt
-#ccall Z3_get_ast_id , <Z3_context> -> <Z3_ast> -> IO ()
-#ccall Z3_get_ast_hash , <Z3_context> -> <Z3_ast> -> IO ()
+#ccall Z3_is_eq_ast , <Z3_context> -> <Z3_ast> -> <Z3_ast> -> IO <Z3_bool>
+#ccall Z3_get_ast_id , <Z3_context> -> <Z3_ast> -> IO CUInt
+#ccall Z3_get_ast_hash , <Z3_context> -> <Z3_ast> -> IO CUInt
 #ccall Z3_get_sort , <Z3_context> -> <Z3_ast> -> IO <Z3_sort>
-#ccall Z3_is_well_sorted , <Z3_context> -> <Z3_ast> -> IO CInt
+#ccall Z3_is_well_sorted , <Z3_context> -> <Z3_ast> -> IO <Z3_bool>
 #ccall Z3_get_bool_value , <Z3_context> -> <Z3_ast> -> IO <Z3_lbool>
 #ccall Z3_get_ast_kind , <Z3_context> -> <Z3_ast> -> IO <Z3_ast_kind>
-#ccall Z3_is_app , <Z3_context> -> <Z3_ast> -> IO CInt
-#ccall Z3_is_numeral_ast , <Z3_context> -> <Z3_ast> -> IO CInt
-#ccall Z3_is_algebraic_number , <Z3_context> -> <Z3_ast> -> IO CInt
+#ccall Z3_is_app , <Z3_context> -> <Z3_ast> -> IO <Z3_bool>
+#ccall Z3_is_numeral_ast , <Z3_context> -> <Z3_ast> -> IO <Z3_bool>
+#ccall Z3_is_algebraic_number , <Z3_context> -> <Z3_ast> -> IO <Z3_bool>
 #ccall Z3_to_app , <Z3_context> -> <Z3_ast> -> IO <Z3_app>
 #ccall Z3_to_func_decl , <Z3_context> -> <Z3_ast> -> IO <Z3_func_decl>
 #ccall Z3_get_numeral_string , <Z3_context> -> <Z3_ast> -> IO <Z3_string>
 #ccall Z3_get_numeral_decimal_string , <Z3_context> -> <Z3_ast> -> CUInt -> IO <Z3_string>
 #ccall Z3_get_numerator , <Z3_context> -> <Z3_ast> -> IO <Z3_ast>
 #ccall Z3_get_denominator , <Z3_context> -> <Z3_ast> -> IO <Z3_ast>
-#ccall Z3_get_numeral_small , <Z3_context> -> <Z3_ast> -> Ptr CLong -> Ptr CLong -> IO CInt
-#ccall Z3_get_numeral_int , <Z3_context> -> <Z3_ast> -> Ptr CInt -> IO CInt
-#ccall Z3_get_numeral_uint , <Z3_context> -> <Z3_ast> -> Ptr CUInt -> IO CInt
-#ccall Z3_get_numeral_uint64 , <Z3_context> -> <Z3_ast> -> Ptr CULong -> IO CInt
-#ccall Z3_get_numeral_int64 , <Z3_context> -> <Z3_ast> -> Ptr CLong -> IO CInt
-#ccall Z3_get_numeral_rational_int64 , <Z3_context> -> <Z3_ast> -> Ptr CLong -> Ptr CLong -> IO CInt
+#ccall Z3_get_numeral_small , <Z3_context> -> <Z3_ast> -> Ptr CLLong -> Ptr CLLong -> IO <Z3_bool>
+#ccall Z3_get_numeral_int , <Z3_context> -> <Z3_ast> -> Ptr CInt -> IO <Z3_bool>
+#ccall Z3_get_numeral_uint , <Z3_context> -> <Z3_ast> -> Ptr CUInt -> IO <Z3_bool>
+#ccall Z3_get_numeral_uint64 , <Z3_context> -> <Z3_ast> -> Ptr CULLong -> IO <Z3_bool>
+#ccall Z3_get_numeral_int64 , <Z3_context> -> <Z3_ast> -> Ptr CLLong -> IO <Z3_bool>
+#ccall Z3_get_numeral_rational_int64 , <Z3_context> -> <Z3_ast> -> Ptr CLLong -> Ptr CLLong -> IO <Z3_bool>
 #ccall Z3_get_algebraic_number_lower , <Z3_context> -> <Z3_ast> -> CUInt -> IO <Z3_ast>
 #ccall Z3_get_algebraic_number_upper , <Z3_context> -> <Z3_ast> -> CUInt -> IO <Z3_ast>
 #ccall Z3_pattern_to_ast , <Z3_context> -> <Z3_pattern> -> IO <Z3_ast>
-#ccall Z3_get_pattern_num_terms , <Z3_context> -> <Z3_pattern> -> IO ()
+#ccall Z3_get_pattern_num_terms , <Z3_context> -> <Z3_pattern> -> IO CUInt
 #ccall Z3_get_pattern , <Z3_context> -> <Z3_pattern> -> CUInt -> IO <Z3_ast>
-#ccall Z3_get_index_value , <Z3_context> -> <Z3_ast> -> IO ()
-#ccall Z3_is_quantifier_forall , <Z3_context> -> <Z3_ast> -> IO CInt
-#ccall Z3_get_quantifier_weight , <Z3_context> -> <Z3_ast> -> IO ()
-#ccall Z3_get_quantifier_num_patterns , <Z3_context> -> <Z3_ast> -> IO ()
+#ccall Z3_get_index_value , <Z3_context> -> <Z3_ast> -> IO CUInt
+#ccall Z3_is_quantifier_forall , <Z3_context> -> <Z3_ast> -> IO <Z3_bool>
+#ccall Z3_get_quantifier_weight , <Z3_context> -> <Z3_ast> -> IO CUInt
+#ccall Z3_get_quantifier_num_patterns , <Z3_context> -> <Z3_ast> -> IO CUInt
 #ccall Z3_get_quantifier_pattern_ast , <Z3_context> -> <Z3_ast> -> CUInt -> IO <Z3_pattern>
-#ccall Z3_get_quantifier_num_no_patterns , <Z3_context> -> <Z3_ast> -> IO ()
+#ccall Z3_get_quantifier_num_no_patterns , <Z3_context> -> <Z3_ast> -> IO CUInt
 #ccall Z3_get_quantifier_no_pattern_ast , <Z3_context> -> <Z3_ast> -> CUInt -> IO <Z3_ast>
-#ccall Z3_get_quantifier_num_bound , <Z3_context> -> <Z3_ast> -> IO ()
+#ccall Z3_get_quantifier_num_bound , <Z3_context> -> <Z3_ast> -> IO CUInt
 #ccall Z3_get_quantifier_bound_name , <Z3_context> -> <Z3_ast> -> CUInt -> IO <Z3_symbol>
 #ccall Z3_get_quantifier_bound_sort , <Z3_context> -> <Z3_ast> -> CUInt -> IO <Z3_sort>
 #ccall Z3_get_quantifier_body , <Z3_context> -> <Z3_ast> -> IO <Z3_ast>
@@ -958,34 +963,34 @@ type C'Z3_constructor = Ptr Z3_constructor
 #ccall Z3_translate , <Z3_context> -> <Z3_ast> -> <Z3_context> -> IO <Z3_ast>
 #ccall Z3_model_inc_ref , <Z3_context> -> <Z3_model> -> IO ()
 #ccall Z3_model_dec_ref , <Z3_context> -> <Z3_model> -> IO ()
-#ccall Z3_model_eval , <Z3_context> -> <Z3_model> -> <Z3_ast> -> CInt -> Ptr <Z3_ast> -> IO CInt
+#ccall Z3_model_eval , <Z3_context> -> <Z3_model> -> <Z3_ast> -> <Z3_bool> -> Ptr <Z3_ast> -> IO <Z3_bool>
 #ccall Z3_model_get_const_interp , <Z3_context> -> <Z3_model> -> <Z3_func_decl> -> IO <Z3_ast>
-#ccall Z3_model_has_interp , <Z3_context> -> <Z3_model> -> <Z3_func_decl> -> IO CInt
+#ccall Z3_model_has_interp , <Z3_context> -> <Z3_model> -> <Z3_func_decl> -> IO <Z3_bool>
 #ccall Z3_model_get_func_interp , <Z3_context> -> <Z3_model> -> <Z3_func_decl> -> IO <Z3_func_interp>
-#ccall Z3_model_get_num_consts , <Z3_context> -> <Z3_model> -> IO ()
+#ccall Z3_model_get_num_consts , <Z3_context> -> <Z3_model> -> IO CUInt
 #ccall Z3_model_get_const_decl , <Z3_context> -> <Z3_model> -> CUInt -> IO <Z3_func_decl>
-#ccall Z3_model_get_num_funcs , <Z3_context> -> <Z3_model> -> IO ()
+#ccall Z3_model_get_num_funcs , <Z3_context> -> <Z3_model> -> IO CUInt
 #ccall Z3_model_get_func_decl , <Z3_context> -> <Z3_model> -> CUInt -> IO <Z3_func_decl>
-#ccall Z3_model_get_num_sorts , <Z3_context> -> <Z3_model> -> IO ()
+#ccall Z3_model_get_num_sorts , <Z3_context> -> <Z3_model> -> IO CUInt
 #ccall Z3_model_get_sort , <Z3_context> -> <Z3_model> -> CUInt -> IO <Z3_sort>
 #ccall Z3_model_get_sort_universe , <Z3_context> -> <Z3_model> -> <Z3_sort> -> IO <Z3_ast_vector>
-#ccall Z3_is_as_array , <Z3_context> -> <Z3_ast> -> IO CInt
+#ccall Z3_is_as_array , <Z3_context> -> <Z3_ast> -> IO <Z3_bool>
 #ccall Z3_get_as_array_func_decl , <Z3_context> -> <Z3_ast> -> IO <Z3_func_decl>
 #ccall Z3_func_interp_inc_ref , <Z3_context> -> <Z3_func_interp> -> IO ()
 #ccall Z3_func_interp_dec_ref , <Z3_context> -> <Z3_func_interp> -> IO ()
-#ccall Z3_func_interp_get_num_entries , <Z3_context> -> <Z3_func_interp> -> IO ()
+#ccall Z3_func_interp_get_num_entries , <Z3_context> -> <Z3_func_interp> -> IO CUInt
 #ccall Z3_func_interp_get_entry , <Z3_context> -> <Z3_func_interp> -> CUInt -> IO <Z3_func_entry>
 #ccall Z3_func_interp_get_else , <Z3_context> -> <Z3_func_interp> -> IO <Z3_ast>
-#ccall Z3_func_interp_get_arity , <Z3_context> -> <Z3_func_interp> -> IO ()
+#ccall Z3_func_interp_get_arity , <Z3_context> -> <Z3_func_interp> -> IO CUInt
 #ccall Z3_func_entry_inc_ref , <Z3_context> -> <Z3_func_entry> -> IO ()
 #ccall Z3_func_entry_dec_ref , <Z3_context> -> <Z3_func_entry> -> IO ()
 #ccall Z3_func_entry_get_value , <Z3_context> -> <Z3_func_entry> -> IO <Z3_ast>
-#ccall Z3_func_entry_get_num_args , <Z3_context> -> <Z3_func_entry> -> IO ()
+#ccall Z3_func_entry_get_num_args , <Z3_context> -> <Z3_func_entry> -> IO CUInt
 #ccall Z3_func_entry_get_arg , <Z3_context> -> <Z3_func_entry> -> CUInt -> IO <Z3_ast>
-#ccall Z3_open_log , <Z3_string> -> IO CInt
+#ccall Z3_open_log , <Z3_string> -> IO <Z3_bool>
 #ccall Z3_append_log , <Z3_string> -> IO ()
 #ccall Z3_close_log , IO ()
-#ccall Z3_toggle_warning_messages , CInt -> IO ()
+#ccall Z3_toggle_warning_messages , <Z3_bool> -> IO ()
 #ccall Z3_set_ast_print_mode , <Z3_context> -> <Z3_ast_print_mode> -> IO ()
 #ccall Z3_ast_to_string , <Z3_context> -> <Z3_ast> -> IO <Z3_string>
 #ccall Z3_pattern_to_string , <Z3_context> -> <Z3_pattern> -> IO <Z3_string>
@@ -997,13 +1002,13 @@ type C'Z3_constructor = Ptr Z3_constructor
 #ccall Z3_parse_smtlib2_file , <Z3_context> -> <Z3_string> -> CUInt -> Ptr <Z3_symbol> -> Ptr <Z3_sort> -> CUInt -> Ptr <Z3_symbol> -> Ptr <Z3_func_decl> -> IO <Z3_ast>
 #ccall Z3_parse_smtlib_string , <Z3_context> -> <Z3_string> -> CUInt -> Ptr <Z3_symbol> -> Ptr <Z3_sort> -> CUInt -> Ptr <Z3_symbol> -> Ptr <Z3_func_decl> -> IO ()
 #ccall Z3_parse_smtlib_file , <Z3_context> -> <Z3_string> -> CUInt -> Ptr <Z3_symbol> -> Ptr <Z3_sort> -> CUInt -> Ptr <Z3_symbol> -> Ptr <Z3_func_decl> -> IO ()
-#ccall Z3_get_smtlib_num_formulas , <Z3_context> -> IO ()
+#ccall Z3_get_smtlib_num_formulas , <Z3_context> -> IO CUInt
 #ccall Z3_get_smtlib_formula , <Z3_context> -> CUInt -> IO <Z3_ast>
-#ccall Z3_get_smtlib_num_assumptions , <Z3_context> -> IO ()
+#ccall Z3_get_smtlib_num_assumptions , <Z3_context> -> IO CUInt
 #ccall Z3_get_smtlib_assumption , <Z3_context> -> CUInt -> IO <Z3_ast>
-#ccall Z3_get_smtlib_num_decls , <Z3_context> -> IO ()
+#ccall Z3_get_smtlib_num_decls , <Z3_context> -> IO CUInt
 #ccall Z3_get_smtlib_decl , <Z3_context> -> CUInt -> IO <Z3_func_decl>
-#ccall Z3_get_smtlib_num_sorts , <Z3_context> -> IO ()
+#ccall Z3_get_smtlib_num_sorts , <Z3_context> -> IO CUInt
 #ccall Z3_get_smtlib_sort , <Z3_context> -> CUInt -> IO <Z3_sort>
 #ccall Z3_get_smtlib_error , <Z3_context> -> IO <Z3_string>
 #ccall Z3_get_error_code , <Z3_context> -> IO <Z3_error_code>
@@ -1017,19 +1022,19 @@ type C'Z3_constructor = Ptr Z3_constructor
 #ccall Z3_disable_trace , <Z3_string> -> IO ()
 #ccall Z3_reset_memory , IO ()
 #ccall Z3_finalize_memory , IO ()
-#ccall Z3_mk_goal , <Z3_context> -> CInt -> CInt -> CInt -> IO <Z3_goal>
+#ccall Z3_mk_goal , <Z3_context> -> <Z3_bool> -> <Z3_bool> -> <Z3_bool> -> IO <Z3_goal>
 #ccall Z3_goal_inc_ref , <Z3_context> -> <Z3_goal> -> IO ()
 #ccall Z3_goal_dec_ref , <Z3_context> -> <Z3_goal> -> IO ()
 #ccall Z3_goal_precision , <Z3_context> -> <Z3_goal> -> IO <Z3_goal_prec>
 #ccall Z3_goal_assert , <Z3_context> -> <Z3_goal> -> <Z3_ast> -> IO ()
-#ccall Z3_goal_inconsistent , <Z3_context> -> <Z3_goal> -> IO CInt
-#ccall Z3_goal_depth , <Z3_context> -> <Z3_goal> -> IO ()
+#ccall Z3_goal_inconsistent , <Z3_context> -> <Z3_goal> -> IO <Z3_bool>
+#ccall Z3_goal_depth , <Z3_context> -> <Z3_goal> -> IO CUInt
 #ccall Z3_goal_reset , <Z3_context> -> <Z3_goal> -> IO ()
-#ccall Z3_goal_size , <Z3_context> -> <Z3_goal> -> IO ()
+#ccall Z3_goal_size , <Z3_context> -> <Z3_goal> -> IO CUInt
 #ccall Z3_goal_formula , <Z3_context> -> <Z3_goal> -> CUInt -> IO <Z3_ast>
-#ccall Z3_goal_num_exprs , <Z3_context> -> <Z3_goal> -> IO ()
-#ccall Z3_goal_is_decided_sat , <Z3_context> -> <Z3_goal> -> IO CInt
-#ccall Z3_goal_is_decided_unsat , <Z3_context> -> <Z3_goal> -> IO CInt
+#ccall Z3_goal_num_exprs , <Z3_context> -> <Z3_goal> -> IO CUInt
+#ccall Z3_goal_is_decided_sat , <Z3_context> -> <Z3_goal> -> IO <Z3_bool>
+#ccall Z3_goal_is_decided_unsat , <Z3_context> -> <Z3_goal> -> IO <Z3_bool>
 #ccall Z3_goal_translate , <Z3_context> -> <Z3_goal> -> <Z3_context> -> IO <Z3_goal>
 #ccall Z3_goal_to_string , <Z3_context> -> <Z3_goal> -> IO <Z3_string>
 #ccall Z3_mk_tactic , <Z3_context> -> <Z3_string> -> IO <Z3_tactic>
@@ -1060,9 +1065,9 @@ type C'Z3_constructor = Ptr Z3_constructor
 #ccall Z3_probe_and , <Z3_context> -> <Z3_probe> -> <Z3_probe> -> IO <Z3_probe>
 #ccall Z3_probe_or , <Z3_context> -> <Z3_probe> -> <Z3_probe> -> IO <Z3_probe>
 #ccall Z3_probe_not , <Z3_context> -> <Z3_probe> -> IO <Z3_probe>
-#ccall Z3_get_num_tactics , <Z3_context> -> IO ()
+#ccall Z3_get_num_tactics , <Z3_context> -> IO CUInt
 #ccall Z3_get_tactic_name , <Z3_context> -> CUInt -> IO <Z3_string>
-#ccall Z3_get_num_probes , <Z3_context> -> IO ()
+#ccall Z3_get_num_probes , <Z3_context> -> IO CUInt
 #ccall Z3_get_probe_name , <Z3_context> -> CUInt -> IO <Z3_string>
 #ccall Z3_tactic_get_help , <Z3_context> -> <Z3_tactic> -> IO <Z3_string>
 #ccall Z3_tactic_get_param_descrs , <Z3_context> -> <Z3_tactic> -> IO <Z3_param_descrs>
@@ -1074,7 +1079,7 @@ type C'Z3_constructor = Ptr Z3_constructor
 #ccall Z3_apply_result_inc_ref , <Z3_context> -> <Z3_apply_result> -> IO ()
 #ccall Z3_apply_result_dec_ref , <Z3_context> -> <Z3_apply_result> -> IO ()
 #ccall Z3_apply_result_to_string , <Z3_context> -> <Z3_apply_result> -> IO <Z3_string>
-#ccall Z3_apply_result_get_num_subgoals , <Z3_context> -> <Z3_apply_result> -> IO ()
+#ccall Z3_apply_result_get_num_subgoals , <Z3_context> -> <Z3_apply_result> -> IO CUInt
 #ccall Z3_apply_result_get_subgoal , <Z3_context> -> <Z3_apply_result> -> CUInt -> IO <Z3_goal>
 #ccall Z3_apply_result_convert_model , <Z3_context> -> <Z3_apply_result> -> CUInt -> <Z3_model> -> IO <Z3_model>
 #ccall Z3_mk_solver , <Z3_context> -> IO <Z3_solver>
@@ -1090,7 +1095,7 @@ type C'Z3_constructor = Ptr Z3_constructor
 #ccall Z3_solver_push , <Z3_context> -> <Z3_solver> -> IO ()
 #ccall Z3_solver_pop , <Z3_context> -> <Z3_solver> -> CUInt -> IO ()
 #ccall Z3_solver_reset , <Z3_context> -> <Z3_solver> -> IO ()
-#ccall Z3_solver_get_num_scopes , <Z3_context> -> <Z3_solver> -> IO ()
+#ccall Z3_solver_get_num_scopes , <Z3_context> -> <Z3_solver> -> IO CUInt
 #ccall Z3_solver_assert , <Z3_context> -> <Z3_solver> -> <Z3_ast> -> IO ()
 #ccall Z3_solver_assert_and_track , <Z3_context> -> <Z3_solver> -> <Z3_ast> -> <Z3_ast> -> IO ()
 #ccall Z3_solver_get_assertions , <Z3_context> -> <Z3_solver> -> IO <Z3_ast_vector>
@@ -1107,10 +1112,10 @@ type C'Z3_constructor = Ptr Z3_constructor
 #ccall Z3_stats_to_string , <Z3_context> -> <Z3_stats> -> IO <Z3_string>
 #ccall Z3_stats_inc_ref , <Z3_context> -> <Z3_stats> -> IO ()
 #ccall Z3_stats_dec_ref , <Z3_context> -> <Z3_stats> -> IO ()
-#ccall Z3_stats_size , <Z3_context> -> <Z3_stats> -> IO ()
+#ccall Z3_stats_size , <Z3_context> -> <Z3_stats> -> IO CUInt
 #ccall Z3_stats_get_key , <Z3_context> -> <Z3_stats> -> CUInt -> IO <Z3_string>
-#ccall Z3_stats_is_uint , <Z3_context> -> <Z3_stats> -> CUInt -> IO CInt
-#ccall Z3_stats_is_double , <Z3_context> -> <Z3_stats> -> CUInt -> IO CInt
-#ccall Z3_stats_get_uint_value , <Z3_context> -> <Z3_stats> -> CUInt -> IO ()
+#ccall Z3_stats_is_uint , <Z3_context> -> <Z3_stats> -> CUInt -> IO <Z3_bool>
+#ccall Z3_stats_is_double , <Z3_context> -> <Z3_stats> -> CUInt -> IO <Z3_bool>
+#ccall Z3_stats_get_uint_value , <Z3_context> -> <Z3_stats> -> CUInt -> IO CUInt
 #ccall Z3_stats_get_double_value , <Z3_context> -> <Z3_stats> -> CUInt -> IO CDouble
-#ccall Z3_get_estimated_alloc_size , IO CULong
+#ccall Z3_get_estimated_alloc_size , IO CULLong

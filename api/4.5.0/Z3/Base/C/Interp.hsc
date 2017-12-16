@@ -8,6 +8,7 @@
 module Z3.Base.C.Interp where
 import Foreign.Ptr
 import Foreign.C.Types
+import Foreign.C.String
 import Z3.Base.C.Api
 #ccall Z3_mk_interpolant , <Z3_context> -> <Z3_ast> -> IO <Z3_ast>
 #ccall Z3_mk_interpolation_context , <Z3_config> -> IO <Z3_context>

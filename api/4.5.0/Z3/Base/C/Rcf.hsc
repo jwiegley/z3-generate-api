@@ -8,6 +8,7 @@
 module Z3.Base.C.Rcf where
 import Foreign.Ptr
 import Foreign.C.Types
+import Foreign.C.String
 import Z3.Base.C.Api
 #ccall Z3_rcf_del , <Z3_context> -> <Z3_rcf_num> -> IO ()
 #ccall Z3_rcf_mk_rational , <Z3_context> -> <Z3_string> -> IO <Z3_rcf_num>
@@ -15,7 +16,7 @@ import Z3.Base.C.Api
 #ccall Z3_rcf_mk_pi , <Z3_context> -> IO <Z3_rcf_num>
 #ccall Z3_rcf_mk_e , <Z3_context> -> IO <Z3_rcf_num>
 #ccall Z3_rcf_mk_infinitesimal , <Z3_context> -> IO <Z3_rcf_num>
-#ccall Z3_rcf_mk_roots , <Z3_context> -> CUInt -> Ptr <Z3_rcf_num> -> Ptr <Z3_rcf_num> -> IO ()
+#ccall Z3_rcf_mk_roots , <Z3_context> -> CUInt -> Ptr <Z3_rcf_num> -> Ptr <Z3_rcf_num> -> IO CUInt
 #ccall Z3_rcf_add , <Z3_context> -> <Z3_rcf_num> -> <Z3_rcf_num> -> IO <Z3_rcf_num>
 #ccall Z3_rcf_sub , <Z3_context> -> <Z3_rcf_num> -> <Z3_rcf_num> -> IO <Z3_rcf_num>
 #ccall Z3_rcf_mul , <Z3_context> -> <Z3_rcf_num> -> <Z3_rcf_num> -> IO <Z3_rcf_num>

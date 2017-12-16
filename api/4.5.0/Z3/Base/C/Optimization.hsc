@@ -8,14 +8,15 @@
 module Z3.Base.C.Optimization where
 import Foreign.Ptr
 import Foreign.C.Types
+import Foreign.C.String
 import Z3.Base.C.Api
 #ccall Z3_mk_optimize , <Z3_context> -> IO <Z3_optimize>
 #ccall Z3_optimize_inc_ref , <Z3_context> -> <Z3_optimize> -> IO ()
 #ccall Z3_optimize_dec_ref , <Z3_context> -> <Z3_optimize> -> IO ()
 #ccall Z3_optimize_assert , <Z3_context> -> <Z3_optimize> -> <Z3_ast> -> IO ()
-#ccall Z3_optimize_assert_soft , <Z3_context> -> <Z3_optimize> -> <Z3_ast> -> <Z3_string> -> <Z3_symbol> -> IO ()
-#ccall Z3_optimize_maximize , <Z3_context> -> <Z3_optimize> -> <Z3_ast> -> IO ()
-#ccall Z3_optimize_minimize , <Z3_context> -> <Z3_optimize> -> <Z3_ast> -> IO ()
+#ccall Z3_optimize_assert_soft , <Z3_context> -> <Z3_optimize> -> <Z3_ast> -> <Z3_string> -> <Z3_symbol> -> IO CUInt
+#ccall Z3_optimize_maximize , <Z3_context> -> <Z3_optimize> -> <Z3_ast> -> IO CUInt
+#ccall Z3_optimize_minimize , <Z3_context> -> <Z3_optimize> -> <Z3_ast> -> IO CUInt
 #ccall Z3_optimize_push , <Z3_context> -> <Z3_optimize> -> IO ()
 #ccall Z3_optimize_pop , <Z3_context> -> <Z3_optimize> -> IO ()
 #ccall Z3_optimize_check , <Z3_context> -> <Z3_optimize> -> IO <Z3_lbool>

@@ -8,6 +8,7 @@
 module Z3.Base.C.Fixedpoint where
 import Foreign.Ptr
 import Foreign.C.Types
+import Foreign.C.String
 import Z3.Base.C.Api
 #ccall Z3_mk_fixedpoint , <Z3_context> -> IO <Z3_fixedpoint>
 #ccall Z3_fixedpoint_inc_ref , <Z3_context> -> <Z3_fixedpoint> -> IO ()
@@ -20,7 +21,7 @@ import Z3.Base.C.Api
 #ccall Z3_fixedpoint_get_answer , <Z3_context> -> <Z3_fixedpoint> -> IO <Z3_ast>
 #ccall Z3_fixedpoint_get_reason_unknown , <Z3_context> -> <Z3_fixedpoint> -> IO <Z3_string>
 #ccall Z3_fixedpoint_update_rule , <Z3_context> -> <Z3_fixedpoint> -> <Z3_ast> -> <Z3_symbol> -> IO ()
-#ccall Z3_fixedpoint_get_num_levels , <Z3_context> -> <Z3_fixedpoint> -> <Z3_func_decl> -> IO ()
+#ccall Z3_fixedpoint_get_num_levels , <Z3_context> -> <Z3_fixedpoint> -> <Z3_func_decl> -> IO CUInt
 #ccall Z3_fixedpoint_get_cover_delta , <Z3_context> -> <Z3_fixedpoint> -> CInt -> <Z3_func_decl> -> IO <Z3_ast>
 #ccall Z3_fixedpoint_add_cover , <Z3_context> -> <Z3_fixedpoint> -> CInt -> <Z3_func_decl> -> <Z3_ast> -> IO ()
 #ccall Z3_fixedpoint_get_statistics , <Z3_context> -> <Z3_fixedpoint> -> IO <Z3_stats>

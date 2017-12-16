@@ -8,6 +8,7 @@
 module Z3.Base.C.Fpa where
 import Foreign.Ptr
 import Foreign.C.Types
+import Foreign.C.String
 import Z3.Base.C.Api
 #ccall Z3_mk_fpa_rounding_mode_sort , <Z3_context> -> IO <Z3_sort>
 #ccall Z3_mk_fpa_round_nearest_ties_to_even , <Z3_context> -> IO <Z3_ast>
@@ -37,7 +38,7 @@ import Z3.Base.C.Api
 #ccall Z3_mk_fpa_numeral_double , <Z3_context> -> CDouble -> <Z3_sort> -> IO <Z3_ast>
 #ccall Z3_mk_fpa_numeral_int , <Z3_context> -> CInt -> <Z3_sort> -> IO <Z3_ast>
 #ccall Z3_mk_fpa_numeral_int_uint , <Z3_context> -> CInt -> CInt -> CUInt -> <Z3_sort> -> IO <Z3_ast>
-#ccall Z3_mk_fpa_numeral_int64_uint64 , <Z3_context> -> CInt -> CLong -> CULong -> <Z3_sort> -> IO <Z3_ast>
+#ccall Z3_mk_fpa_numeral_int64_uint64 , <Z3_context> -> CInt -> CLLong -> CULLong -> <Z3_sort> -> IO <Z3_ast>
 #ccall Z3_mk_fpa_abs , <Z3_context> -> <Z3_ast> -> IO <Z3_ast>
 #ccall Z3_mk_fpa_neg , <Z3_context> -> <Z3_ast> -> IO <Z3_ast>
 #ccall Z3_mk_fpa_add , <Z3_context> -> <Z3_ast> -> <Z3_ast> -> <Z3_ast> -> IO <Z3_ast>
@@ -70,12 +71,12 @@ import Z3.Base.C.Api
 #ccall Z3_mk_fpa_to_ubv , <Z3_context> -> <Z3_ast> -> <Z3_ast> -> CUInt -> IO <Z3_ast>
 #ccall Z3_mk_fpa_to_sbv , <Z3_context> -> <Z3_ast> -> <Z3_ast> -> CUInt -> IO <Z3_ast>
 #ccall Z3_mk_fpa_to_real , <Z3_context> -> <Z3_ast> -> IO <Z3_ast>
-#ccall Z3_fpa_get_ebits , <Z3_context> -> <Z3_sort> -> IO ()
-#ccall Z3_fpa_get_sbits , <Z3_context> -> <Z3_sort> -> IO ()
+#ccall Z3_fpa_get_ebits , <Z3_context> -> <Z3_sort> -> IO CUInt
+#ccall Z3_fpa_get_sbits , <Z3_context> -> <Z3_sort> -> IO CUInt
 #ccall Z3_fpa_get_numeral_sign , <Z3_context> -> <Z3_ast> -> Ptr CInt -> IO CInt
 #ccall Z3_fpa_get_numeral_significand_string , <Z3_context> -> <Z3_ast> -> IO <Z3_string>
-#ccall Z3_fpa_get_numeral_significand_uint64 , <Z3_context> -> <Z3_ast> -> Ptr CULong -> IO CInt
+#ccall Z3_fpa_get_numeral_significand_uint64 , <Z3_context> -> <Z3_ast> -> Ptr CULLong -> IO CInt
 #ccall Z3_fpa_get_numeral_exponent_string , <Z3_context> -> <Z3_ast> -> IO <Z3_string>
-#ccall Z3_fpa_get_numeral_exponent_int64 , <Z3_context> -> <Z3_ast> -> Ptr CLong -> IO CInt
+#ccall Z3_fpa_get_numeral_exponent_int64 , <Z3_context> -> <Z3_ast> -> Ptr CLLong -> IO CInt
 #ccall Z3_mk_fpa_to_ieee_bv , <Z3_context> -> <Z3_ast> -> IO <Z3_ast>
 #ccall Z3_mk_fpa_to_fp_int_real , <Z3_context> -> <Z3_ast> -> <Z3_ast> -> <Z3_ast> -> <Z3_sort> -> IO <Z3_ast>

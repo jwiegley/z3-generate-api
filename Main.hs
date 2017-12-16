@@ -140,6 +140,7 @@ data Options = Options
   , _gitWorkdir       :: FilePath
   , _cPreface         :: String
   , _hscPreface       :: String
+  , _hscAddition      :: String
   , _headersPath      :: FilePath
   , _headers          :: [FilePath]
   , _headerOutputPath :: FilePath
@@ -169,6 +170,7 @@ defOpts = Options
   , _gitWorkdir       = "z3-#{version}"
   , _cPreface         = error "Must specify cPreface"
   , _hscPreface       = error "Must specify hscPreface"
+  , _hscAddition      = ""
   , _headersPath      = "z3/src/api"
   , _headers          = error "Must specify headers to process"
   , _headerOutputPath = "Z3/Base/C/#{name}.hsc"
@@ -204,6 +206,10 @@ generateOpts opts = Options
             <> help "Preface to be included near the top of each .hsc file"
             <> value (opts^.hscPreface))
     <*> strOption
+        (   long "hsc-addition"
+            <> help "Code that is appended to the C.hsc file"
+            <> value (opts^.hscAddition))
+    <*> strOption
         (   long "headers-path"
             <> help "Path to API headers within z3 repository"
             <> value (opts^.headersPath))
@@ -237,6 +243,7 @@ optionsHashMap Options {..} = M.empty &~ do
   at "git-workdir"      ?= _gitWorkdir
   at "cPreface"         ?= _cPreface
   at "hscPreface"       ?= _hscPreface
+  at "hscAddition"      ?= _hscAddition
   at "headers-path"     ?= _headersPath
   at "headers"          ?= concat _headers
   at "headerOutputPath" ?= _headerOutputPath
@@ -263,7 +270,14 @@ mutateHeader :: FilePath
 mutateHeader file preface k =
   withSystemTempFile "z3header.h" $ \temp handle -> do
     hPutStrLn handle preface
-    withFile file ReadMode $ hPutStr handle <=< hGetContents
+    withFile file ReadMode $
+      hPutStr handle
+        -- jww (2017-12-15): This is a hack at present!
+        . sub [re|typedef int Z3_bool;|]
+              "typedef enum\n{\n  Z3_FALSE = 0,\n  Z3_TRUE\n} Z3_bool;"
+        . sub [re|#define Z3_TRUE  1|] ""
+        . sub [re|#define Z3_FALSE 0|] ""
+        <=< hGetContents
     hClose handle
     k temp
 
@@ -425,6 +439,8 @@ main = do
                                   at "module" ?= ""
                                   at "includes" ?= "#include <z3.h>")
                               (opts^.hscPreface)
+
+    hPutStr api $ opts^.hscAddition
 
     forM_ fdecls' $ \(file, decls) -> do
       putStrLn $ "Writing " ++ file ++ "..."
@@ -680,4 +696,6 @@ convertType globals callbacks
     Nothing -> case callbacks ^. at name of
       Nothing -> name
       Just _ty -> "(FunPtr " ++ name ++ ")"
-    Just _ty -> "(Ptr " ++ name ++ ")"
+    Just _ty -> case name of
+        "Z3_string" -> "CString"
+        _ -> "(Ptr " ++ name ++ ")"

@@ -13,6 +13,8 @@ hscPreface: |
   module Z3.Base.C#{module} where
   import Foreign.Ptr
   import Foreign.C.Types
+  import Foreign.C.String
+hscAddition: ''
 headersPath: 'z3-#{version}/src/api'
 headers:
   - z3_api.h
