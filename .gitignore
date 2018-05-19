@@ -1,4 +1,3 @@
-default.nix
 shell.nix
 dist/
 /.dir-locals.el
